@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=smartdns
 PKG_VERSION:=48.4
-PKG_RELEASE:=9
+PKG_RELEASE:=10
 
 PKG_SOURCE_VERSION:=21c940edc65520849ba03544c5cf8d9cf326e680
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_SOURCE_VERSION).tar.gz
@@ -107,11 +107,12 @@ endef
 
 define Build/Compile/smartdns-ui
 	cargo install --force --locked bindgen-cli
-	CARGO_BUILD_ARGS="$(if $(strip $(RUST_PKG_FEATURES)),--features "$(strip $(RUST_PKG_FEATURES))") --profile $(CARGO_PKG_PROFILE)"
-	+$(CARGO_PKG_VARS) CARGO_BUILD_ARGS="$(CARGO_BUILD_ARGS)" CC=$(TARGET_CC) \
-	PATH="$$(PATH):$(CARGO_HOME)/bin" \
-	AWS_LC_SYS_CFLAGS="-O0" \
-	make -C $(PKG_BUILD_DIR)/plugin/smartdns-ui
+	+export $(CARGO_PKG_VARS); \
+	export CARGO_BUILD_ARGS="$(if $(strip $(RUST_PKG_FEATURES)),--features "$(strip $(RUST_PKG_FEATURES))") --profile $(CARGO_PKG_PROFILE)"; \
+	export CC="$(TARGET_CC)"; \
+	export PATH="$$(PATH):$(CARGO_HOME)/bin"; \
+	export AWS_LC_SYS_CFLAGS="-O0"; \
+	$(MAKE) -C $(PKG_BUILD_DIR)/plugin/smartdns-ui
 endef
 
 define Download/smartdns-webui
