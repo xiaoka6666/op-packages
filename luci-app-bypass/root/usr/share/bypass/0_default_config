@@ -1,0 +1,177 @@
+
+config global
+	option enabled '0'
+	option node_socks_port '1088'
+	option client_proxy '1'
+	option log_node '1'
+	option loglevel 'error'
+	# BypassCore is the required routing core. NaiveProxy is its protocol
+	# adapter/SOCKS upstream for Naive nodes, never a fallback core.
+	option dns_redirect '1'
+	# BypassCore binary (install from https://github.com/kinmeic/BypassCore
+	# releases; pick the build matching your router's architecture). The
+	# routing/split engine + Observatory / route-test / DNS-resolve pages
+	# auto-disable if the binary/launcher is absent or does not identify itself.
+	option bypasscore_file '/usr/bin/bypasscore'
+	option naive_file '/usr/bin/naive'
+	# Base table/priority for per-node NaiveProxy egress policy routing. A node's
+	# logical interface is configured in its Node Config page.
+	option naive_egress_table '20200'
+	option naive_egress_rule_priority '900'
+
+config global_forwarding
+	option ipv6_tproxy '0'
+	option accept_icmp '0'
+	option tcp_no_redir_ports 'disable'
+	# NaiveProxy cannot carry general UDP. "disable" therefore blocks external
+	# forwarded UDP by default. Explicit ports are allowed to go Direct.
+	option udp_no_redir_ports 'disable'
+	option tcp_redir_ports '1:65535'
+	option tcp_proxy_way 'redirect'
+
+config global_dns
+	option domestic_dns 'auto'
+	# Leave remote_dns empty: with a WireGuard Default node it is derived from
+	# the node's Local DNS; otherwise the generator falls back to 1.1.1.1.
+	option remote_dns_protocol 'tcp'
+	option remote_dns_doh 'https://1.1.1.1/dns-query'
+	option remote_dns_detour 'remote'
+	option direct_dns_query_strategy 'UseIP'
+	option remote_dns_query_strategy 'UseIPv4'
+	option dns_hosts 'cloudflare-dns.com 1.1.1.1
+dns.google.com 8.8.8.8'
+	# BypassCore native UDP/TCP DNS inbound used as dnsmasq's main upstream.
+	option bypasscore_dns_listen_port '10554'
+	option dns_split_domain 'geosite:cn'
+
+config global_rules
+	option geosite_update '1'
+	option geoip_update '1'
+	option update_week_mode ''
+	option update_time_mode '0:00'
+	option update_interval_mode '1'
+	option v2ray_location_asset '/usr/share/v2ray/'
+	option domainStrategy 'IpOnDemand'
+	option write_ipset_direct '1'
+	option enable_geoview_ip '1'
+	# Default network interface for the direct outbound (direct shunt traffic).
+	# Empty = direct uses the system default route (unbound freedom outbound).
+	option direct_egress_interface ''
+	# Virtual catch-all outbound and inherited interface for Naive nodes.
+	option default_node '_direct'
+	option default_naive_interface ''
+	option geoip_url 'https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat'
+	option geosite_url 'https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat'
+
+config global_app
+	option geoview_file '/usr/bin/geoview'
+
+config global_delay
+	option start_daemon '1'
+	option start_delay '60'
+	option stop_week_mode ''
+	option start_week_mode ''
+	option restart_week_mode ''
+
+config shunt_rules 'AdBlock'
+	option remarks 'AdBlock'
+	option network 'tcp,udp'
+	option domain_list 'geosite:category-ads-all'
+	option outbound '_blackhole'
+	option sort_order '0'
+
+config shunt_rules 'China'
+	option remarks 'China'
+	option network 'tcp,udp'
+	option domain_list 'geosite:cn'
+	option ip_list 'geoip:cn'
+	option outbound '_direct'
+	option sort_order '1'
+
+config shunt_rules 'AI'
+	option remarks 'AI'
+	option network 'tcp,udp'
+	option domain_list 'geosite:openai
+geosite:category-ai-!cn
+geosite:apple-intelligence'
+	option outbound '_default'
+	option sort_order '2'
+
+config shunt_rules 'DirectGame'
+	option remarks 'DirectGame'
+	option network 'tcp,udp'
+	option domain_list '# steam直连域名获取国内CDN走国内线路下载
+cm.steampowered.com
+steamserver.net
+
+# steam国内CDN华为云
+steampipe.steamcontent.tnkjmec.com
+# steam国内CDN白山云
+st.dl.eccdnx.com
+st.dl.bscstorage.net
+st.dl.pinyuncloud.com
+# steam国内CDN新流云(原金山云)(支持ipv6)
+dl.steam.clngaa.com
+# steam国内CDN网宿
+cdn.mileweb.cs.steampowered.com.8686c.com
+cdn-ws.content.steamchina.com
+# steam国内CDN腾讯云 (蒸汽中国独占)
+cdn-qc.content.steamchina.com
+# steam国内CDN阿里云(支持ipv6)
+cdn-ali.content.steamchina.com
+xz.pphimalayanrt.com
+lv.queniujq.cn
+alibaba.cdn.steampipe.steamcontent.com
+
+# 国内游戏geosite域名
+geosite:category-games@cn'
+	option ip_list '# steam直连IP
+45.121.184.0/24
+103.10.124.0/23
+103.28.54.0/24
+146.66.152.0/24
+146.66.155.0/24
+153.254.86.0/24
+155.133.224.0/22
+155.133.230.0/24
+155.133.232.0/23
+155.133.234.0/24
+155.133.236.0/22
+155.133.240.0/23
+155.133.244.0/23
+155.133.246.0/24
+155.133.248.0/21
+162.254.192.0/21
+185.25.182.0/23
+190.217.32.0/22
+192.69.96.0/22
+205.196.6.0/24
+208.64.200.0/22
+208.78.164.0/22
+205.185.194.0/24'
+	option outbound '_direct'
+	option sort_order '3'
+
+config shunt_rules 'GFW'
+	option remarks 'GFW'
+	option network 'tcp,udp'
+	option domain_list 'geosite:gfw'
+	option outbound '_default'
+	option sort_order '4'
+
+config shunt_rules 'Microsoft'
+	option remarks 'Microsoft'
+	option network 'tcp,udp'
+	option domain_list 'geosite:microsoft'
+	option outbound '_default'
+	option sort_order '5'
+
+config nodes 'naive1'
+	option node_type 'naiveproxy'
+	option remarks 'Example'
+	option protocol 'https'
+	option address 'naive.example.com'
+	option port '443'
+	option egress_interface ''
+	option username 'user'
+	option password 'pass'

@@ -6,7 +6,7 @@ START=99
 CONF="filebrowser-q"
 PROG="/usr/bin/filebrowser-q"
 CONF_PATH="/etc/filebrowser-q/config.yaml"
-DB_PATH="/etc/filebrowser-q/database.db"
+DB_PATH="/etc/filebrowser-q/filebrowser.sqlite"
 
 start_service() {
 	config_load "$CONF"
@@ -35,12 +35,15 @@ server:
       name: "$root_name"
       config:
         defaultEnabled: true
+  cacheDir: "/tmp"
+  cacheDirCleanup: true
+  cacheDirMaxSizeMB: 500
 auth:
   methods:
     password:
       enabled: true
       adminUsername: "admin"
-      adminPassword: "admin"
+      adminPassword: "admin123"
 userDefaults:
   ui:
     locale: "zhCN"

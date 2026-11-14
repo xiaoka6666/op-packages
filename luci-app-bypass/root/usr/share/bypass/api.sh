@@ -1,0 +1,1618 @@
+#!/bin/sh
+# Copyright (c) 2026 Eugene Chan
+# SPDX-License-Identifier: MIT
+#
+# rpcd `file.exec` backend for luci-app-bypass. The LuCI JS frontend calls
+#   fs.exec('/usr/share/bypass/api.sh', [action, ...args])
+# and parses the JSON object printed on stdout. All output is a single JSON
+# line so it is trivial to consume with JSON.parse().
+
+. /lib/functions.sh
+. /usr/share/libubox/jshn.sh
+. ${APP_PATH:-/usr/share/bypass}/utils.sh
+# Source app.sh to inherit get_config / gen_bypasscore_config. Guard against the
+# dispatcher: setting APP_SOURCED=1 makes app.sh define functions and return
+# without running its own start/stop argument handler.
+APP_SOURCED=1 . ${APP_PATH:-/usr/share/bypass}/app.sh
+
+emit() {
+	json_dump
+}
+
+# Extract a bounded, user-facing message from a BypassCore control response.
+# curl does not fail on HTTP 4xx/5xx here, so callers must inspect the JSON body
+# rather than replacing every control-plane error with one generic diagnosis.
+control_error_message() {
+	local raw=$1 message
+	message=$(printf '%s' "$raw" | jsonfilter -e '@.error.message' 2>/dev/null)
+	[ -n "$message" ] || message=$(printf '%s\n' "$raw" | sed -n '1p')
+	printf '%.300s' "$message"
+}
+
+# status -> { running, naive_present, bypasscore_present,
+#             use_tables, egress_ifaces, redir_port }
+do_status() {
+	local BYPASSCORE_FILE NAIVE_BIN DEFAULT_NODE
+	local naive_present=0 bypasscore_present=0 running=0 sid outbound node kind
+	local selected_nodes="" selected_nodes_count=0 selected_naive_count=0 selected_wireguard_count=0
+	BYPASSCORE_FILE=$(first_type "$(config_t_get global bypasscore_file /usr/bin/bypasscore)" bypasscore)
+	NAIVE_BIN=$(first_type "$(config_t_get global naive_file /usr/bin/naive)" naive)
+	DEFAULT_NODE=$(config_t_get global_rules default_node _direct)
+	[ -n "$NAIVE_BIN" ] && naive_present=1
+	[ -x "$BYPASSCORE_FILE" ] && bypasscore_present=1
+	selected_nodes=$(
+		{
+			for sid in $(shunt_rule_sections); do
+				[ "$(config_n_get "$sid" is_default 0)" = "1" ] && continue
+				outbound=$(config_n_get "$sid" outbound)
+				[ "$(config_get_type "$outbound")" = "nodes" ] && printf '%s\n' "$outbound"
+			done
+			[ "$(config_get_type "$DEFAULT_NODE")" = "nodes" ] && printf '%s\n' "$DEFAULT_NODE"
+		} | awk 'NF && !seen[$0]++'
+	)
+	while IFS= read -r node; do
+		[ -n "$node" ] || continue
+		selected_nodes_count=$((selected_nodes_count + 1))
+		kind=$(node_type "$node")
+		if [ "$kind" = "wireguard" ]; then
+			selected_wireguard_count=$((selected_wireguard_count + 1))
+		else
+			selected_naive_count=$((selected_naive_count + 1))
+		fi
+	done <<-EOF
+	$selected_nodes
+	EOF
+	# BypassCore plus the ready marker represent a fully installed firewall/DNS
+	# path; structured readiness already covers all configured inbounds.
+	[ -f /var/lock/bypass_ready.lock ] && process_alive bypasscore && running=1
+	local use_tables egress active_redir_port core_ready=0 core_revision="" core_hash="" core_status
+	use_tables=$(get_cache_var USE_TABLES)
+	egress=$(get_cache_var EGRESS_IFACES)
+	active_redir_port=$(get_cache_var ACL_GLOBAL_redir_port)
+	if core_status=$(bypasscore_control_request GET /v1/ready 2>/dev/null); then
+		printf '%s' "$core_status" | grep -Eq '"ready"[[:space:]]*:[[:space:]]*true' && core_ready=1
+		core_revision=$(printf '%s' "$core_status" | sed -n 's/.*"configRevision"[[:space:]]*:[[:space:]]*\([0-9][0-9]*\).*/\1/p')
+		core_hash=$(printf '%s' "$core_status" | sed -n 's/.*"configHash"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+	fi
+	[ "$core_ready" = "1" ] || running=0
+
+	json_init
+	json_add_int running "$running"
+	json_add_int naive_present "$naive_present"
+	json_add_int bypasscore_present "$bypasscore_present"
+	json_add_int core_ready "$core_ready"
+	json_add_string core_revision "$core_revision"
+	json_add_string core_config_hash "$core_hash"
+	json_add_string use_tables "$use_tables"
+	json_add_string egress_ifaces "$egress"
+	# Retain the old singular key for callers written before per-node egress.
+	json_add_string egress_iface "$egress"
+	json_add_string redir_port "$active_redir_port"
+	json_add_string version "$(cat "$APP_PATH/version" 2>/dev/null)"
+	if [ "$(config_get_type "$DEFAULT_NODE")" = "nodes" ]; then
+		json_add_string default_node "$DEFAULT_NODE"
+	else
+		json_add_string default_node "$(printf '%s\n' "$selected_nodes" | awk 'NF { print; exit }')"
+	fi
+	json_add_int selected_nodes "$selected_nodes_count"
+	json_add_int selected_naive_nodes "$selected_naive_count"
+	json_add_int selected_wireguard_nodes "$selected_wireguard_count"
+	emit
+}
+
+# route_test <net:host:port> -> { code, matched, raw }
+do_route_test() {
+	local dest=$1
+	get_config
+	json_init
+	if [ -z "$dest" ]; then
+		json_add_int code -1
+		json_add_string error "missing destination"
+	elif [ ${#dest} -gt 512 ] 2>/dev/null; then
+		json_add_int code -1
+		json_add_string error "destination is too long"
+	elif ! is_bypasscore "$BYPASSCORE_FILE"; then
+		json_add_int code -1
+		json_add_string error "bypasscore unavailable (set bypasscore_file from https://github.com/kinmeic/BypassCore/releases)"
+	else
+		local request raw rc
+		json_init
+		json_add_string destination "$dest"
+		request=$(json_dump)
+		if process_alive bypasscore && raw=$(bypasscore_control_request POST /v1/route/explain "$request" 2>&1); then
+			rc=0
+			printf '%s' "$raw" | grep -Eq '"code"[[:space:]]*:' && rc=1
+			json_init
+			json_add_int code "$rc"
+			json_add_string matched "$(printf '%s' "$raw" | sed -n 's/.*"ruleTag"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+			json_add_string raw "$raw"
+		else
+			json_init
+			json_add_int code -1
+			json_add_string error "BypassCore is not running or its control socket is unavailable"
+		fi
+	fi
+	emit
+}
+
+# observatory -> { code, raw }
+do_observe() {
+	get_config
+	json_init
+	if ! is_bypasscore "$BYPASSCORE_FILE"; then
+		json_add_int code -1
+		json_add_string error "bypasscore unavailable"
+	else
+		local raw rc
+		if process_alive bypasscore && raw=$(bypasscore_control_request GET /v1/observatory 2>&1); then
+			rc=0
+			printf '%s' "$raw" | grep -Eq '"code"[[:space:]]*:' && rc=1
+			json_init
+			json_add_int code "$rc"
+			json_add_string raw "$raw"
+		else
+			json_init
+			json_add_int code -1
+			json_add_string error "BypassCore is not running or its control socket is unavailable"
+		fi
+	fi
+	emit
+}
+
+# resolve <domain> -> { code, raw } using the running core DNS snapshot
+do_resolve() {
+	local domain=$1
+	get_config
+	json_init
+	if [ -z "$domain" ]; then
+		json_add_int code -1
+		json_add_string error "missing domain"
+	elif [ ${#domain} -gt 512 ] 2>/dev/null; then
+		json_add_int code -1
+		json_add_string error "domain is too long"
+	elif ! is_bypasscore "$BYPASSCORE_FILE"; then
+		json_add_int code -1
+		json_add_string error "bypasscore unavailable (set bypasscore_file from https://github.com/kinmeic/BypassCore/releases)"
+	else
+		local request raw rc
+		json_init
+		json_add_string domain "$domain"
+		request=$(json_dump)
+		if process_alive bypasscore && raw=$(bypasscore_control_request POST /v1/dns/resolve "$request" 2>&1); then
+			rc=0
+			printf '%s' "$raw" | grep -Eq '"code"[[:space:]]*:' && rc=1
+			json_init
+			json_add_int code "$rc"
+			json_add_string raw "$raw"
+		else
+			json_init
+			json_add_int code -1
+			json_add_string error "BypassCore is not running or its control socket is unavailable"
+		fi
+	fi
+	emit
+}
+
+# Keep jobs outside TMP_PATH: updating GeoData can restart the service, whose
+# stop action deletes TMP_PATH. Only fixed commands are run by these endpoints.
+RULE_UPDATE_STATE=/var/run/bypass-rule-update
+
+# rule_update_status [job] -> { code, state: idle|running|done, job, error? }
+do_rule_update_status() (
+	local job=$1 dir rc=-1 state='done'
+	json_init
+	[ -n "$job" ] || job=$(cat "$RULE_UPDATE_STATE/current" 2>/dev/null)
+	if [ -z "$job" ]; then
+		json_add_int code 0
+		json_add_string state idle
+		emit
+		return
+	fi
+	case "$job" in
+		job.??????) ;;
+		*) json_add_int code -1; json_add_string error "Invalid update job."; emit; return ;;
+	esac
+	case "${job#job.}" in
+		*[!A-Za-z0-9]*) json_add_int code -1; json_add_string error "Invalid update job."; emit; return ;;
+	esac
+	dir="$RULE_UPDATE_STATE/$job"
+	if [ -s "$dir/result" ]; then
+		rc=$(cat "$dir/result")
+	elif [ -d "$dir" ] && exec 6>"$RULE_UPDATE_STATE/lock"; then
+		if ! flock -xn 6 && [ "$job" = "$(cat "$RULE_UPDATE_STATE/current" 2>/dev/null)" ]; then
+			state=running
+			rc=0
+		else
+			# Re-read after probing the lock: a worker may have just completed.
+			[ ! -s "$dir/result" ] || rc=$(cat "$dir/result")
+		fi
+		exec 6>&-
+	fi
+	uint_in_range "$rc" 0 255 || rc=-1
+	json_add_int code "$rc"
+	json_add_string state "$state"
+	json_add_string job "$job"
+	[ "$rc" != -1 ] || json_add_string error "The update was interrupted or its result is unavailable."
+	emit
+)
+
+# rule_update -> start a detached job and return immediately. The worker
+# retains fd 7 until its result is published, serializing requests from tabs.
+do_rule_update() (
+	local dir job old rc
+	json_init
+	if [ ! -x "$APP_PATH/rule_update.sh" ]; then
+		json_add_int code -1
+		json_add_string error "Rule updater is unavailable."
+		emit
+		return
+	fi
+	if ! mkdir -p "$RULE_UPDATE_STATE" "$(dirname "$LOG_FILE")" ||
+	   ! { exec 7>"$RULE_UPDATE_STATE/lock"; }; then
+		json_add_int code -1
+		json_add_string error "Unable to create the update job."
+		emit
+		return
+	fi
+	if ! flock -xn 7; then
+		# The lock owner may still be publishing the new job ID. Returning an
+		# older job's status here could report success for the wrong request.
+		json_add_int code 2
+		json_add_string error "Another rule update is already running. Try again later."
+		emit
+		return
+	fi
+	# Retain recent results for other tabs, but bound their lifetime.
+	for old in "$RULE_UPDATE_STATE"/job.*; do
+		[ -d "$old" ] || continue
+		[ "$(find "$old" -prune -mmin +1440 -print 2>/dev/null)" != "$old" ] || rm -rf "$old"
+	done
+	dir=$(mktemp -d "$RULE_UPDATE_STATE/job.XXXXXX") || {
+		json_add_int code -1; json_add_string error "Unable to create the update job."; emit; return
+	}
+	job=${dir##*/}
+	if ! printf '%s\n' "$job" > "$RULE_UPDATE_STATE/current.tmp" ||
+	   ! mv -f "$RULE_UPDATE_STATE/current.tmp" "$RULE_UPDATE_STATE/current"; then
+		rm -rf "$dir"
+		json_add_int code -1; json_add_string error "Unable to create the update job."; emit; return
+	fi
+	(
+		trap '' HUP
+		# Only this short-lived wrapper retains the job lock, not restarted
+		# services or their long-lived children. Close all RPC standard streams.
+		"$APP_PATH/rule_update.sh" manual 7>&- >>"$LOG_FILE" 2>&1
+		rc=$?
+		printf '%s\n' "$rc" > "$dir/result.tmp" && mv -f "$dir/result.tmp" "$dir/result"
+	) </dev/null >/dev/null 2>&1 &
+	json_add_int code 0
+	json_add_string state running
+	json_add_string job "$job"
+	emit
+)
+
+# node_tcp_probe <node_id> -> { code, latency_ms, raw }
+do_node_tcp_probe() {
+	local node_id=$1
+	json_init
+	case "$node_id" in
+		''|*[!A-Za-z0-9_-]*)
+			json_add_int code -1
+			json_add_string error "invalid node"
+			emit
+			return
+			;;
+	esac
+	if [ "$(config_get_type "$node_id")" != "nodes" ]; then
+		json_add_int code -1
+		json_add_string error "node not found"
+		emit
+		return
+	fi
+
+	local address port request raw latency rc endpoint BYPASSCORE_FILE type probe_error
+	type=$(node_type "$node_id")
+	if [ "$type" = "wireguard" ]; then
+		# Compatibility for a cached pre-upgrade LuCI page.
+		do_node_udp_probe "$node_id"
+		return
+	fi
+	address=$(config_n_get "$node_id" address)
+	port=$(config_n_get "$node_id" port)
+	case "$port" in ''|*[!0-9]*) port=0 ;; esac
+	if [ -z "$address" ] || [ "$port" -lt 1 ] 2>/dev/null || [ "$port" -gt 65535 ] 2>/dev/null; then
+		json_add_int code -1
+		json_add_string error "node has no address/port"
+	else
+		BYPASSCORE_FILE=$(config_t_get global bypasscore_file /usr/bin/bypasscore)
+		json_init
+		json_add_string host "$address"
+		json_add_int port "$port"
+		json_add_int timeoutMs 3000
+		request=$(json_dump)
+
+		# Preserve the original control-plane probe path: the running core owns
+		# node-domain DNS policy, while a standalone process would recurse
+		# through dnsmasq after dnsmasq has been pointed at BypassCore.
+		if process_alive bypasscore && raw=$(bypasscore_control_request POST /v1/network/tcp-probe "$request" 2>&1); then
+			rc=0
+		else
+			endpoint="$(host_for_url "$address"):$port"
+			if is_bypasscore "$BYPASSCORE_FILE"; then
+				raw=$("$BYPASSCORE_FILE" -tcp-probe "$endpoint" -tcp-probe-timeout 3s -json 2>&1)
+				rc=$?
+			else
+				raw="BypassCore is unavailable"
+				rc=1
+			fi
+		fi
+		latency=$(printf '%s' "$raw" | sed -n 's/.*"latencyMs"[[:space:]]*:[[:space:]]*\([0-9][0-9.]*\).*/\1/p')
+		[ -n "$latency" ] || rc=1
+		[ "$rc" -eq 0 ] 2>/dev/null || \
+			probe_error=$(printf '%.300s' "$(printf '%s\n' "$raw" | sed -n '1p' | sed 's/^error:[[:space:]]*//')")
+		json_init
+		json_add_int code "$rc"
+		[ -n "$latency" ] && json_add_string latency_ms "$latency"
+		if [ "$rc" -ne 0 ] 2>/dev/null; then
+			json_add_string error "TCP connect probe failed${probe_error:+: ${probe_error}}"
+		fi
+		json_add_string raw "$raw"
+	fi
+	emit
+}
+
+# node_udp_probe <node_id> -> { code, latency_ms, raw }
+# WireGuard is carried over UDP, so its Connect Test verifies the peer
+# handshake rather than coupling transport health to an arbitrary TCP server.
+do_node_udp_probe() {
+	local node_id=$1 request raw latency rc control_error
+	json_init
+	case "$node_id" in
+		''|*[!A-Za-z0-9_-]*)
+			json_add_int code -1
+			json_add_string error "invalid node"
+			emit
+			return
+			;;
+	esac
+	if [ "$(config_get_type "$node_id")" != "nodes" ] || [ "$(node_type "$node_id")" != "wireguard" ]; then
+		json_add_int code -1
+		json_add_string error "WireGuard node not found"
+		emit
+		return
+	fi
+	if ! grep -Fxq "$node_id" "$TMP_PATH/selected_wireguard_nodes" 2>/dev/null; then
+		json_add_int code -1
+		json_add_string error "WireGuard node is not selected by an active rule or the Default row"
+		emit
+		return
+	fi
+	json_init
+	json_add_int timeoutMs 6000
+	json_add_string outboundTag "proxy_${node_id}"
+	request=$(json_dump)
+	if process_alive bypasscore && raw=$(bypasscore_control_request POST /v1/network/handshake-probe "$request" 2>&1); then
+		rc=0
+	else
+		rc=1
+	fi
+	latency=$(printf '%s' "$raw" | sed -n 's/.*"latencyMs"[[:space:]]*:[[:space:]]*\([0-9][0-9.]*\).*/\1/p')
+	[ -n "$latency" ] || rc=1
+	[ "$rc" -eq 0 ] 2>/dev/null || control_error=$(control_error_message "$raw")
+	json_init
+	json_add_int code "$rc"
+	[ -n "$latency" ] && json_add_string latency_ms "$latency"
+	if [ "$rc" -ne 0 ] 2>/dev/null; then
+		json_add_string error "WireGuard UDP handshake failed${control_error:+: ${control_error}}"
+	fi
+	json_add_string raw "$raw"
+	emit
+}
+
+# node_urltest <node_id> <probe_url> -> { code, use_time }
+# NaiveProxy mirrors passwall2 by using a short-lived SOCKS listener. WireGuard
+# is native to the running core, so its test uses the selected outbound directly.
+do_node_urltest() {
+	local node_id=$1 url_test_url=$2
+	json_init
+	case "$node_id" in
+		''|*[!A-Za-z0-9_-]*)
+			json_add_int code -1
+			json_add_string error "invalid node"
+			emit
+			return
+			;;
+	esac
+	if [ "$(config_get_type "$node_id")" != "nodes" ]; then
+		json_add_int code -1
+		json_add_string error "node not found"
+		emit
+		return
+	fi
+
+	# The selector is intentionally not UCI configuration. Accept only the
+	# presets exposed by node_list.js so this root helper cannot become an
+	# arbitrary URL fetch primitive.
+	case "$url_test_url" in
+		https://cp.cloudflare.com/|\
+		https://www.gstatic.com/generate_204|\
+		https://www.google.com/generate_204|\
+		https://www.youtube.com/generate_204|\
+		https://connect.rom.miui.com/generate_204|\
+		https://connectivitycheck.platform.hicloud.com/generate_204|\
+		https://wifi.vivo.com.cn/generate_204) ;;
+		*) url_test_url=https://www.google.com/generate_204 ;;
+	esac
+
+	local type
+	type=$(node_type "$node_id")
+	if [ "$type" = "wireguard" ]; then
+		local request raw latency control_error rc=1
+		if ! grep -Fxq "$node_id" "$TMP_PATH/selected_wireguard_nodes" 2>/dev/null; then
+			json_add_int code -1
+			json_add_string error "WireGuard node is not selected by an active rule or the Default row"
+			emit
+			return
+		fi
+		json_init
+		json_add_string url "$url_test_url"
+		# The first probe may initialize the device and negotiate a handshake.
+		# No resolverTag: BypassCore resolves the target through the tested
+		# WireGuard outbound first, then through the core DNS chain. Pinning a
+		# direct resolver would falsely require the remote DNS to be reachable
+		# without the tunnel, contradicting remote_dns_detour=remote.
+		json_add_int timeoutMs 10000
+		json_add_string outboundTag "proxy_${node_id}"
+		request=$(json_dump)
+		if process_alive bypasscore && raw=$(bypasscore_control_request POST /v1/network/url-test "$request" 2>&1); then
+			latency=$(printf '%s' "$raw" | sed -n 's/.*"latencyMs"[[:space:]]*:[[:space:]]*\([0-9][0-9.]*\).*/\1/p')
+			[ -n "$latency" ] && rc=0
+		else
+			raw="BypassCore is not running or its control socket is unavailable"
+		fi
+		[ "$rc" -eq 0 ] 2>/dev/null || control_error=$(control_error_message "$raw")
+		json_init
+		json_add_int code "$rc"
+		if [ "$rc" -eq 0 ]; then
+			json_add_string use_time "$(printf '%s\n' "$latency" | awk '{printf "%d", $1}')"
+		else
+			json_add_string error "WireGuard URL test failed${control_error:+: ${control_error}}"
+		fi
+		json_add_string raw "$raw"
+		emit
+		return
+	fi
+
+	local address port username password protocol
+	address=$(config_n_get "$node_id" address)
+	port=$(config_n_get "$node_id" port)
+	username=$(config_n_get "$node_id" username)
+	password=$(config_n_get "$node_id" password)
+	protocol=$(config_n_get "$node_id" protocol https)
+	if [ -z "$address" ] || [ -z "$port" ]; then
+		json_add_int code -1
+		json_add_string error "node has no address/port"
+		emit
+		return
+	fi
+	local naive_bin
+	naive_bin=$(first_type "$(config_t_get global naive_file /usr/bin/naive)" naive)
+	if [ -z "$naive_bin" ]; then
+		json_add_int code -1
+		json_add_string error "naiveproxy not installed"
+		emit
+		return
+	fi
+	case "$protocol" in quic) ;; *) protocol=https ;; esac
+
+	# Build a minimal SOCKS config (127.0.0.1 only; no egress pinning).
+	# Each rpcd invocation needs its own process/config/log names. The node ID
+	# alone collides when the user starts two tests for the same row at once.
+	local tag="url_test_${node_id}_$$"
+	local socks_port
+	local auth=""
+	if [ -n "$username$password" ]; then
+		username=$(uri_encode_userinfo "$username") || { json_add_int code -1; json_add_string error "bad credentials"; emit; return; }
+		password=$(uri_encode_userinfo "$password") || { json_add_int code -1; json_add_string error "bad credentials"; emit; return; }
+		auth="${username}:${password}@"
+	fi
+	local server_host
+	server_host=$(host_for_url "$address")
+
+	mkdir -p "$TMP_PATH2"
+	local cfg="$TMP_PATH2/${tag}.json" log="$TMP_PATH2/${tag}.log"
+	# Serialize port selection until NaiveProxy has bound its listener. This
+	# closes the check-then-bind race between simultaneous URL tests while still
+	# allowing their HTTP probes to run in parallel.
+	mkdir -p /var/lock || {
+		json_init
+		json_add_int code -1
+		json_add_string error "cannot create URL test lock directory"
+		emit
+		return
+	}
+	exec 8>/var/lock/bypass_urltest_port.lock || {
+		json_init
+		json_add_int code -1
+		json_add_string error "cannot open URL test port lock"
+		emit
+		return
+	}
+	if ! flock -x 8; then
+		exec 8>&-
+		json_init
+		json_add_int code -1
+		json_add_string error "cannot acquire URL test port lock"
+		emit
+		return
+	fi
+	socks_port=$(get_new_port 48900 tcp)
+	json_init
+	json_add_string "listen" "socks://127.0.0.1:${socks_port}"
+	json_add_string "proxy" "${protocol}://${auth}${server_host}:${port}"
+	json_dump > "$cfg"
+	: > "$log"
+
+	# Keep the port lock private to this shell; if rpcd abandons the request,
+	# the helper must not inherit fd 8 and pin the lock indefinitely.
+	ln_run 0 "$naive_bin" "$tag" "$log" "$cfg" 8>&-
+	local use_time="" http_code test_error="" listener_ready=0
+	if wait_for_listener "$tag" "$socks_port" tcp 8 "$log"; then
+		listener_ready=1
+	fi
+	flock -u 8 2>/dev/null
+	exec 8>&-
+	if [ "$listener_ready" = "1" ]; then
+		# Use GET and discard the body instead of HEAD.  Several generate_204
+		# endpoints do not reliably complete a HEAD response through a freshly
+		# negotiated Naive tunnel, leaving curl waiting until its hard timeout.
+		# The extra budget covers the Naive handshake plus the actual HTTP probe.
+		# % output: "<http_code> <time_total seconds>"
+		local out curl_rc
+		out=$(curl -o /dev/null -sS --request GET --connect-timeout 5 --max-time 12 \
+			-x "socks5h://127.0.0.1:${socks_port}" \
+			-w '%{http_code} %{time_total}' "$url_test_url" 2>/dev/null)
+		curl_rc=$?
+		http_code="${out%% *}"
+		if [ "$curl_rc" -eq 0 ] 2>/dev/null; then
+			case "$http_code" in ''|0|000) ;;
+				2[0-9][0-9])
+					local t="${out#* }"
+					use_time=$(echo "$t" | awk '{printf "%d", $1*1000}')
+					;;
+				*) test_error="HTTP ${http_code}" ;;
+			esac
+		fi
+	fi
+
+	# Teardown regardless of outcome.
+	local pid
+	# PID files can outlive a failed child. Verify the process image before
+	# signalling so a quickly reused PID cannot terminate an unrelated process.
+	pid=$(process_pid "$tag")
+	[ -n "$pid" ] && kill -9 "$pid" >/dev/null 2>&1
+	rm -f "$cfg" "$log" "$TMP_PID_PATH/${tag}.pid"
+
+	json_init
+	if [ -n "$use_time" ]; then
+		json_add_int code 0
+		json_add_string use_time "$use_time"
+	else
+		json_add_int code -1
+		json_add_string error "${test_error:-timeout}"
+	fi
+	emit
+}
+
+# wireguard_keypair / wireguard_psk -> key material generated by BypassCore.
+# Keeping Curve25519 operations in the core avoids browser-dependent crypto
+# implementations and guarantees the same encoding accepted by the runtime.
+do_wireguard_keypair() {
+	local raw secret public rc=0
+	BYPASSCORE_FILE=$(config_t_get global bypasscore_file /usr/bin/bypasscore)
+	if ! is_bypasscore "$BYPASSCORE_FILE"; then
+		rc=1
+	else
+		raw=$("$BYPASSCORE_FILE" -wireguard-generate-keypair -json 2>/dev/null) || rc=$?
+	fi
+	[ "$rc" -eq 0 ] 2>/dev/null && json_load "$raw" 2>/dev/null || rc=1
+	if [ "$rc" -eq 0 ] 2>/dev/null; then
+		json_get_var secret secretKey
+		json_get_var public publicKey
+		[ -n "$secret" ] && [ -n "$public" ] || rc=1
+	fi
+	json_init
+	json_add_int code "$rc"
+	if [ "$rc" -eq 0 ] 2>/dev/null; then
+		json_add_string secretKey "$secret"
+		json_add_string publicKey "$public"
+	else
+		json_add_string error "BypassCore WireGuard key generation is unavailable"
+	fi
+	emit
+}
+
+do_wireguard_psk() {
+	local raw key rc=0
+	BYPASSCORE_FILE=$(config_t_get global bypasscore_file /usr/bin/bypasscore)
+	if ! is_bypasscore "$BYPASSCORE_FILE"; then
+		rc=1
+	else
+		raw=$("$BYPASSCORE_FILE" -wireguard-generate-psk -json 2>/dev/null) || rc=$?
+	fi
+	[ "$rc" -eq 0 ] 2>/dev/null && json_load "$raw" 2>/dev/null || rc=1
+	if [ "$rc" -eq 0 ] 2>/dev/null; then
+		json_get_var key preSharedKey
+		[ -n "$key" ] || rc=1
+	fi
+	json_init
+	json_add_int code "$rc"
+	if [ "$rc" -eq 0 ] 2>/dev/null; then
+		json_add_string preSharedKey "$key"
+	else
+		json_add_string error "BypassCore WireGuard preshared key generation is unavailable"
+	fi
+	emit
+}
+
+# log_tail [n] -> { log }
+do_log_tail() {
+	local n=${1:-200} text encoded
+	uint_in_range "$n" 1 1000 || n=200
+	json_init
+	if [ -s "$LOG_FILE" ]; then
+		# A line limit alone does not bound verbose component diagnostics. Encode
+		# at most 12 KiB so the JSON response fits rpcd and byte-boundary cuts do
+		# not make a UTF-8 JSON string invalid.
+		text=$(tail -n "$n" "$LOG_FILE" 2>/dev/null | tail -c 12288)
+		if command -v base64 >/dev/null 2>&1; then
+			encoded=$(printf '%s' "$text" | base64 2>/dev/null | tr -d '\n')
+			if [ -n "$encoded" ] || [ -z "$text" ]; then
+				json_add_string log_base64 "$encoded"
+			else
+				json_add_string log "$text"
+				json_add_string error "base64 encoding failed; install coreutils-base64"
+			fi
+		else
+			# OpenWrt images may omit the optional BusyBox base64 applet. Keep
+			# the log page useful while the package dependency is repaired.
+			json_add_string log "$text"
+			json_add_string error "base64 command unavailable; install coreutils-base64"
+		fi
+	else
+		# A missing/empty log is normal before the first message and after
+		# clear_log. Return an empty result so polling keeps the page blank.
+		json_add_string log ""
+	fi
+	emit
+}
+
+# clear_log
+do_clear_log() {
+	json_init
+	if mkdir -p "$(dirname "$LOG_FILE")" && : > "$LOG_FILE"; then
+		json_add_int code 0
+	else
+		json_add_int code -1
+		json_add_string error "cannot clear log"
+	fi
+	emit
+}
+
+do_clear_nftset() {
+	local nft_bin rc=0 set error=""
+	nft_bin=$(first_type /usr/sbin/nft nft)
+	if [ -z "$nft_bin" ]; then
+		rc=1
+		error="nft not found"
+	fi
+	if [ "$rc" = "0" ]; then
+		# Flush only rule-result sets. Resolver and node-address whitelists are
+		# safety state and must not disappear while the service is live.
+		for set in bypass_direct_dns bypass_direct_dns6; do
+			"$nft_bin" flush set inet bypass "$set" 2>/dev/null || true
+		done
+		# A successful probe refreshes kernel set metadata and invalidates the
+		# core writer's TTL dedupe state, allowing later DNS answers to repopulate
+		# elements removed by this operation.
+		if process_alive bypasscore && \
+	   ! bypasscore_nftsets_ready; then
+			rc=1
+			error="BypassCore NFTSet resynchronization failed"
+		fi
+	fi
+	json_init
+	json_add_int code "$rc"
+	if [ "$rc" = "0" ]; then
+		json_add_string msg "NFTSet cleared"
+	else
+		json_add_string error "$error"
+	fi
+	emit
+}
+
+# interfaces -> { interfaces: ["wan","wan1",...] } (for the egress dropdowns)
+do_interfaces() {
+	json_init
+	json_add_array interfaces
+	local iface interfaces
+	interfaces=$(uci -q show network 2>/dev/null | sed -n 's/^network\.\([^.=]*\)=interface$/\1/p')
+	interfaces="${interfaces}
+$(ubus call network.interface dump 2>/dev/null | jsonfilter -e '@.interface[*].interface' 2>/dev/null)"
+	for iface in $(printf '%s\n' "$interfaces" | awk 'NF && !seen[$0]++' | sort); do
+		[ -n "$iface" ] && [ "$iface" != "loopback" ] && json_add_string '' "$iface"
+	done
+	json_close_array
+	emit
+}
+
+# connect_status <type> <url> -> { ping_type:"curl", use_time:N } | { status:0 }
+# Router OUTPUT traffic is intentionally not transparently redirected. Test
+# foreign sites through the effective Default node: NaiveProxy uses its SOCKS
+# listener, while WireGuard uses the running native outbound control probe.
+do_connect_status() {
+	local type=$1 url=$2
+	local out code use_time node node_kind socks_port request raw error
+	# This root-executed endpoint is called with fixed UI probes only.  Binding
+	# each label to its exact URL prevents it from becoming a LAN-reachable SSRF
+	# primitive through rpcd/file.exec.
+	case "${type}:${url}" in
+		baidu:https://www.baidu.com|\
+		google:https://www.google.com/generate_204|\
+		github:https://github.com) ;;
+		*) type="" ;;
+	esac
+	[ -n "$type" ] && [ -n "$url" ] || { json_init; json_add_int status 0; emit; return; }
+	get_config
+	if [ "$type" = "baidu" ]; then
+		out=$(curl -fs -o /dev/null -w '%{time_total}' --connect-timeout 3 --max-time 8 "$url" 2>/dev/null)
+		code=$?
+	else
+		node=$(default_proxy_node)
+		node_kind=$(node_type "$node")
+		if [ -z "$node" ]; then
+			code=1
+			out=""
+			error="No active outbound node"
+		elif [ "$node_kind" = "wireguard" ]; then
+			json_init
+			json_add_string url "$url"
+			json_add_int timeoutMs 12000
+			json_add_string outboundTag "proxy_${node}"
+			request=$(json_dump)
+			if process_alive bypasscore && raw=$(bypasscore_control_request POST /v1/network/url-test "$request" 2>&1); then
+				out=$(printf '%s' "$raw" | sed -n 's/.*"latencyMs"[[:space:]]*:[[:space:]]*\([0-9][0-9.]*\).*/\1/p')
+				if [ -n "$out" ]; then
+					code=0
+					# URL-test latency is already milliseconds.
+					use_time=$(printf '%s\n' "$out" | awk '{printf "%d", $1}')
+				else
+					code=1
+					error=$(control_error_message "$raw")
+				fi
+			else
+				code=1
+				error="BypassCore is not running or its control socket is unavailable"
+			fi
+		else
+			socks_port=$(node_socks_port "$node")
+			if [ -z "$socks_port" ] || [ "$(check_port_exists "$socks_port" tcp)" -le 0 ] 2>/dev/null; then
+				code=1
+				out=""
+				error="NaiveProxy SOCKS listener is unavailable"
+			else
+				out=$(curl -fs -o /dev/null -w '%{time_total}' --socks5-hostname "127.0.0.1:${socks_port}" \
+					--connect-timeout 5 --max-time 12 "$url" 2>/dev/null)
+				code=$?
+			fi
+		fi
+	fi
+	if [ "$type" = "baidu" ] || [ "${node_kind:-naiveproxy}" = "naiveproxy" ]; then
+		use_time=$(echo "$out" | awk '{printf "%d", $1*1000}')
+	fi
+	json_init
+	if [ "$code" = "0" ] && [ -n "$use_time" ]; then
+		json_add_string ping_type "curl"
+		json_add_int use_time "$use_time"
+	else
+		json_add_int status 0
+		[ -n "$error" ] && json_add_string error "$error"
+	fi
+	emit
+}
+
+# geo_view <action> <value> [offset] -> { code, output, stream, ... }
+# Wraps the geoview binary for the Geo View page.
+#   lookup  (domain/IP → geo rule list)
+#   extract (geoip:cc / geosite:name → member list)
+#   list    (enumerate every entry name in geoip.dat and geosite.dat)
+# Mirrors passwall2's controller geo_view() invocation:
+#   lookup:  geoview -type <geoip|geosite> -action lookup  -input <dat> -value <q> -lowmem=true
+#   extract: geoview -type <geoip|geosite> -action extract -input <dat> -list  <c> -lowmem=true
+#   list:    geoview -type <geoip|geosite> -action extract -input <dat>           -lowmem=true
+
+run_bounded_capture() {
+	local output=$1
+	shift
+	# POSIX specifies ulimit -f in 512-byte blocks. Keep the subprocess bounded,
+	# but do not use the rpcd response size as the extraction limit: large,
+	# otherwise valid geosite lists are streamed to the LuCI page in chunks.
+	( ulimit -f 32768 2>/dev/null; exec "$@" ) > "$output" 2>&1
+}
+
+# rpcd/file.exec transports command output through an UBus message, whose size
+# is much smaller than the useful output of a geosite extraction. Keep the
+# inline response comfortably below that limit and let geo_view_read() serve
+# larger results from a short-lived root-owned file.
+GEO_VIEW_MAX_BYTES=16777216
+GEO_VIEW_INLINE_BYTES=16384
+GEO_VIEW_CHUNK_BYTES=16384
+
+cleanup_geo_view_streams() {
+	local root="$TMP_PATH/geo-view" dir
+	[ -d "$root" ] || return 0
+	for dir in "$root"/result.*; do
+		[ -d "$dir" ] || continue
+		# BusyBox find supports -mmin; the directory itself carries the stream's
+		# creation/last-access time and is the only path ever removed here.
+		[ "$(find "$dir" -prune -mmin +10 -print 2>/dev/null)" = "$dir" ] && rm -rf "$dir"
+	done
+}
+
+geo_view_read() {
+	local token=$1 offset=${2:-0}
+	local root="$TMP_PATH/geo-view" dir file total next finished chunk block
+	json_init
+
+	case "$token" in
+		result.??????) ;;
+		*)
+			json_add_int code -1
+			json_add_string error "invalid Geo View result token"
+			emit
+			return
+		;;
+	esac
+	case "${token#result.}" in
+		*[!A-Za-z0-9]*)
+			json_add_int code -1
+			json_add_string error "invalid Geo View result token"
+			emit
+			return
+		;;
+	esac
+	case "$offset" in
+		''|*[!0-9]*)
+			json_add_int code -1
+			json_add_string error "invalid Geo View result offset"
+			emit
+			return
+		;;
+	esac
+	uint_in_range "$offset" 0 "$GEO_VIEW_MAX_BYTES" || {
+		json_add_int code -1
+		json_add_string error "invalid Geo View result offset"
+		emit
+		return
+	}
+	[ $((offset % GEO_VIEW_CHUNK_BYTES)) -eq 0 ] || {
+		json_add_int code -1
+		json_add_string error "unaligned Geo View result offset"
+		emit
+		return
+	}
+
+	dir="$root/$token"
+	file="$dir/output"
+	if [ ! -d "$dir" ] || [ ! -f "$file" ] || [ -L "$dir" ] || [ -L "$file" ]; then
+		json_add_int code -1
+		json_add_string error "Geo View result has expired"
+		emit
+		return
+	fi
+	touch "$dir" 2>/dev/null
+
+	total=$(wc -c < "$file" 2>/dev/null | tr -d '[:space:]')
+	case "$total" in
+		''|*[!0-9]*)
+			json_add_int code -1
+			json_add_string error "cannot stat Geo View result"
+			emit
+			return
+		;;
+	esac
+	[ "$offset" -le "$total" ] 2>/dev/null || {
+		json_add_int code -1
+		json_add_string error "Geo View result offset is out of range"
+		emit
+		return
+	}
+
+	if [ "$offset" -lt "$total" ]; then
+		# The sentinel prevents command substitution from stripping trailing
+		# newlines from a chunk. Read in aligned blocks so large results do not
+		# require millions of one-byte reads on a resource-constrained router.
+		block=$((offset / GEO_VIEW_CHUNK_BYTES))
+		chunk=$(dd if="$file" bs="$GEO_VIEW_CHUNK_BYTES" skip="$block" count=1 2>/dev/null; printf x)
+		chunk=${chunk%x}
+		next=$((offset + GEO_VIEW_CHUNK_BYTES))
+		[ "$next" -gt "$total" ] && next=$total
+		finished=0
+		[ "$next" -ge "$total" ] && finished=1
+	else
+		chunk=""
+		next=$total
+		finished=1
+	fi
+
+	json_add_int code 0
+	json_add_string output "$chunk"
+	json_add_int next_offset "$next"
+	json_add_int total "$total"
+	json_add_int "done" "$finished"
+	emit
+	if [ "$finished" = "1" ]; then
+		rm -rf "$dir"
+	else
+		# Keep an actively consumed stream out of the stale-result cleanup path.
+		touch "$dir" 2>/dev/null
+	fi
+}
+
+# Print shunt-rule section IDs containing a GeoData lookup result. This mirrors
+# passwall2 controller's get_rules(): compare the part after geosite:/geoip:
+# and ignore commented lines.
+geo_rules_for_value() {
+	local search=$1 geo_type=$2 sid list line main
+	search=$(printf '%s' "$search" | tr '[:upper:]' '[:lower:]')
+	for sid in $(shunt_rule_sections); do
+		[ "$(config_n_get "$sid" is_default 0)" = "1" ] && continue
+		if [ "$geo_type" = "geoip" ]; then
+			list=$(config_n_get "$sid" ip_list)
+		else
+			list=$(config_n_get "$sid" domain_list)
+		fi
+		while IFS= read -r line; do
+			line=$(printf '%s' "$line" | tr -d '\r' | tr '[:upper:]' '[:lower:]')
+			[ -n "$line" ] || continue
+			case "$line" in *'#'*) continue ;; esac
+			case "$line" in *:*) main=${line#*:} ;; *) main=$line ;; esac
+			if [ "$geo_type" = "geoip" ] && { echo "$search" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$|:'; }; then
+				case "$main" in *"$search"*) echo "$sid"; break ;; esac
+			elif [ "$main" = "$search" ]; then
+				echo "$sid"
+				break
+			fi
+		done <<-EOF
+		$list
+		EOF
+	done
+}
+
+# Report the effective TCP/443 outbound and its OpenWrt/runtime interface for a
+# Geo View lookup. BypassCore remains authoritative for rule priority; UCI and
+# netifd then translate its outbound tag into the interface actually used.
+geo_lookup_egress() {
+	local target=$1 request raw tag node sid logical="" label device devices="" devices_label="" iface mapped=""
+	get_config
+	case "$target" in *:*) target="[$target]" ;; esac
+	json_init
+	json_add_string destination "tcp:${target}:443"
+	request=$(json_dump)
+	if ! process_alive bypasscore || ! raw=$(bypasscore_control_request POST /v1/route/explain "$request" 2>/dev/null); then
+		printf '%s\n' "Egress interface: unavailable (BypassCore control plane is not running)"
+		return
+	fi
+	tag=$(printf '%s\n' "$raw" | sed -n 's/.*"outboundTag"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+	case "$tag" in
+		block)
+			printf '%s\n' "Outbound: Block" "Egress interface: none (blocked)"
+			return
+			;;
+		proxy_*)
+			node=${tag#proxy_}
+			label=$(config_n_get "$node" remarks "$node")
+			logical=$(node_egress_interface "$node")
+			if [ "$(node_type "$node")" = "wireguard" ]; then
+				printf '%s\n' "Outbound: WireGuard node [$label]"
+			else
+				printf '%s\n' "Outbound: NaiveProxy node [$label]"
+			fi
+			;;
+		direct_*)
+			sid=${tag#direct_}
+			logical=$(config_n_get "$sid" egress_interface)
+			printf '%s\n' "Outbound: Direct"
+			;;
+		direct)
+			logical=$(config_t_get global_rules direct_egress_interface)
+			printf '%s\n' "Outbound: Direct"
+			;;
+		*)
+			printf '%s\n' "Egress interface: unavailable (no routing decision)"
+			return
+			;;
+	esac
+
+	if [ -n "$logical" ]; then
+		if get_egress_runtime "$logical"; then
+			printf '%s\n' "Egress interface: ${logical} (${EGRESS_DEVICE})"
+		else
+			printf '%s\n' "Egress interface: ${logical} (currently unavailable)"
+		fi
+		return
+	fi
+
+	devices=$(
+		{ ip -o -4 route show default; ip -o -6 route show default; } 2>/dev/null |
+			awk '{ for (i=1; i<=NF; i++) if ($i == "dev") print $(i+1) }' |
+			awk 'NF && !seen[$0]++'
+	)
+	network_flush_cache 2>/dev/null
+	for device in $devices; do
+		mapped=""
+		for iface in $(uci -q show network 2>/dev/null | sed -n 's/^network\.\([^.=]*\)=interface$/\1/p'); do
+			network_get_device mapped "$iface" 2>/dev/null
+			[ "$mapped" = "$device" ] && break
+			mapped=""
+		done
+		label="${mapped:+$iface -> }$device"
+		devices_label="${devices_label:+$devices_label, }$label"
+	done
+	printf '%s\n' "Egress interface: system default${devices_label:+ ($devices_label)}"
+}
+
+do_geo_view() {
+	local action=$1 value=$2
+	if [ "$action" = "read" ]; then
+		geo_view_read "$value" "$3"
+		return
+	fi
+	cleanup_geo_view_streams
+	local bin geoip_path geosite_path
+	bin=$(first_type "$(config_t_get global_app geoview_file /usr/bin/geoview)" geoview)
+	geoip_path=$(get_geo_asset_path geoip)
+	geosite_path=$(get_geo_asset_path geosite)
+	json_init
+	if [ -z "$bin" ]; then
+		json_add_int code -1
+		json_add_string error "geoview binary not found"
+		emit
+		return
+	fi
+	if [ -z "$action" ] || { [ "$action" != "list" ] && [ -z "$value" ]; }; then
+		json_add_int code -1
+		json_add_string error "missing action or value"
+		emit
+		return
+	fi
+	[ ${#value} -le 512 ] 2>/dev/null || {
+		json_add_int code -1
+		json_add_string error "GeoData query is too long"
+		emit
+		return
+	}
+
+	local geo_type file_path out rc route_info capture_dir capture
+	capture_dir=$(mktemp -d 2>/dev/null) || {
+		json_add_int code -1
+		json_add_string error "mktemp failed"
+		emit
+		return
+	}
+	capture="$capture_dir/output"
+	if [ "$action" = "lookup" ]; then
+		# IP → geoip; anything else → geosite.
+		value=$(strip_host_brackets "$value")
+		case "$value" in
+			*:*) geo_type="geoip"; file_path="$geoip_path" ;;
+			*)
+				if echo "$value" | grep -qE "^([0-9]{1,3}[\.]){3}[0-9]{1,3}$"; then
+					geo_type="geoip"
+					file_path="$geoip_path"
+				else
+					geo_type="geosite"
+					file_path="$geosite_path"
+				fi
+				;;
+		esac
+		run_bounded_capture "$capture" "$bin" -type "$geo_type" -action lookup -input "$file_path" -value "$value" -lowmem=true
+		rc=$?
+		out=$(cat "$capture" 2>/dev/null)
+		if [ "$rc" = "0" ] && [ -n "$out" ]; then
+			local tmp line rules
+			tmp=$(mktemp -d 2>/dev/null)
+			if [ -n "$tmp" ]; then
+				printf '%s\n' "$out" | awk '{ print tolower($0) }' | while IFS= read -r line; do
+					[ -n "$line" ] || continue
+					printf '%s:%s\n' "$geo_type" "$line" >> "$tmp/output"
+					geo_rules_for_value "$line" "$geo_type" >> "$tmp/rules"
+				done
+				geo_rules_for_value "$value" "$geo_type" >> "$tmp/rules"
+				rules=$(awk '!seen[$0]++' "$tmp/rules" 2>/dev/null)
+				out=$(cat "$tmp/output" 2>/dev/null)
+				if [ -n "$rules" ]; then
+					out="${out}
+--------------------
+Rules containing this value:
+${rules}"
+				fi
+				rm -rf "$tmp"
+			fi
+		fi
+		if [ "$rc" = "0" ]; then
+			route_info=$(geo_lookup_egress "$value")
+			out="${out}${out:+
+}--------------------
+Routing decision for TCP/443:
+${route_info}"
+		fi
+	elif [ "$action" = "extract" ]; then
+		# Parse geoip:<list> or geosite:<list>.
+		case "$value" in
+			geoip:*)
+				geo_type="geoip"
+				file_path="$geoip_path"
+				value="${value#geoip:}"
+				;;
+			geosite:*)
+				geo_type="geosite"
+				file_path="$geosite_path"
+				value="${value#geosite:}"
+				;;
+			*)
+				rm -rf "$capture_dir"
+				json_add_int code -1
+				json_add_string error "format: geoip:cn or geosite:gfw"
+				emit
+				return
+				;;
+		esac
+		run_bounded_capture "$capture" "$bin" -type "$geo_type" -action extract -input "$file_path" -list "$value" -lowmem=true
+		rc=$?
+	elif [ "$action" = "list" ]; then
+		# Enumerate every entry name in both geoip.dat and geosite.dat.
+		# geoview with -action extract and no -list prints "Available codes:" + names.
+		local geo_codes site_codes list_ok=1
+		if [ -n "$geoip_path" ] && [ -f "$geoip_path" ]; then
+			run_bounded_capture "$capture" "$bin" -type geoip -action extract -input "$geoip_path" -lowmem=true || list_ok=0
+			geo_codes=$(sed -e '1{/^Available codes:$/d;}' -e '/^$/d' -e 's/^/geoip:/' "$capture")
+		fi
+		if [ -n "$geosite_path" ] && [ -f "$geosite_path" ]; then
+			run_bounded_capture "$capture" "$bin" -type geosite -action extract -input "$geosite_path" -lowmem=true || list_ok=0
+			site_codes=$(sed -e '1{/^Available codes:$/d;}' -e '/^$/d' -e 's/^/geosite:/' "$capture")
+		fi
+		out=$(
+			[ -n "$geo_codes" ] && printf '%s\n' "$geo_codes"
+			[ -n "$site_codes" ] && printf '%s\n' "$site_codes"
+		)
+		[ -n "$out" ] && [ "$list_ok" = "1" ] && rc=0 || rc=1
+	else
+		rm -rf "$capture_dir"
+		json_add_int code -1
+		json_add_string error "unknown action: $action"
+		emit
+		return
+	fi
+
+	local output_bytes stream_root stream_dir stream_token error
+	# Lookup/list may have post-processed output. Re-materialize that final text
+	# into the capture file so the same chunked transport is used for every mode.
+	if { [ "$action" = "lookup" ] || [ "$action" = "list" ]; } && [ "$rc" = "0" ]; then
+		printf '%s' "$out" > "$capture"
+	fi
+	output_bytes=$(wc -c < "$capture" 2>/dev/null | tr -d '[:space:]')
+	case "$output_bytes" in
+		''|*[!0-9]*) output_bytes=0 ;;
+	esac
+
+	if [ "$rc" != "0" ]; then
+		if [ "$output_bytes" -ge "$GEO_VIEW_MAX_BYTES" ] 2>/dev/null; then
+			error="geoview failed or its output exceeded the 16 MiB safety limit"
+		else
+			error=$(cat "$capture" 2>/dev/null | head -c 4096)
+			[ -n "$error" ] || error="geoview exited with code ${rc:-1}"
+		fi
+		rm -rf "$capture_dir"
+		json_init
+		json_add_int code "${rc:-1}"
+		json_add_string error "$error"
+		emit
+		return
+	fi
+
+	if [ "$output_bytes" -le "$GEO_VIEW_INLINE_BYTES" ] 2>/dev/null; then
+		[ -n "$out" ] || out=$(cat "$capture" 2>/dev/null)
+		rm -rf "$capture_dir"
+		# The optional routing lookup above also uses jshn, so begin a fresh response.
+		json_init
+		json_add_int code 0
+		json_add_string output "$out"
+		emit
+		return
+	fi
+
+	stream_root="$TMP_PATH/geo-view"
+	stream_dir=""
+	if mkdir -p "$stream_root" 2>/dev/null; then
+		stream_dir=$(mktemp -d "$stream_root/result.XXXXXX" 2>/dev/null)
+	fi
+	if [ -z "$stream_dir" ] || ! mv "$capture" "$stream_dir/output" 2>/dev/null; then
+		[ -n "$stream_dir" ] && rm -rf "$stream_dir"
+		rm -rf "$capture_dir"
+		json_init
+		json_add_int code -1
+		json_add_string error "cannot prepare Geo View result stream"
+		emit
+		return
+	fi
+	chmod 600 "$stream_dir/output" 2>/dev/null
+	stream_token=${stream_dir##*/}
+	rm -rf "$capture_dir"
+
+	# The optional routing lookup above also uses jshn, so begin a fresh response.
+	json_init
+	json_add_int code 0
+	json_add_string output ""
+	json_add_string stream "$stream_token"
+	json_add_int total "$output_bytes"
+	emit
+}
+
+# create_backup -> { code, backup }  (backup = base64-encoded tar.gz of /etc/config/bypass)
+# Mirrors passwall2's backup feature (single config file, no server config).
+do_create_backup() {
+	local tmp tarball b64 stream_dir
+	cleanup_geo_view_streams
+	if [ ! -f /etc/config/bypass ] || [ -L /etc/config/bypass ] || \
+	   [ "$(wc -c </etc/config/bypass 2>/dev/null)" -gt 3145728 ] 2>/dev/null; then
+		json_init
+		json_add_int code -1
+		json_add_string error "configuration is not a safe regular file"
+		emit
+		return
+	fi
+	tmp=$(mktemp -d 2>/dev/null) || { json_init; json_add_int code -1; json_add_string error "mktemp failed"; emit; return; }
+	tarball="$tmp/bypass-backup.tar.gz"
+	if tar -C / -czf "$tarball" etc/config/bypass 2>/dev/null; then
+		b64=$(base64 "$tarball" 2>/dev/null | tr -d '\n')
+		json_init
+		json_add_int code 0
+		if [ "${#b64}" -le "$GEO_VIEW_INLINE_BYTES" ]; then
+			json_add_string backup "$b64"
+		else
+			mkdir -p "$TMP_PATH/geo-view"
+			stream_dir=$(mktemp -d "$TMP_PATH/geo-view/result.XXXXXX") || {
+				rm -rf "$tmp"
+				json_init; json_add_int code -1; json_add_string error "cannot stream backup"; emit; return
+			}
+			if ! printf '%s' "$b64" > "$stream_dir/output"; then
+				rm -rf "$tmp" "$stream_dir"
+				json_init; json_add_int code -1; json_add_string error "cannot stream backup"; emit; return
+			fi
+			json_add_string backup_stream "${stream_dir##*/}"
+		fi
+		json_add_string filename "bypass-$(date +%y%m%d%H%M)-backup.tar.gz"
+	else
+		json_init
+		json_add_int code -1
+		json_add_string error "tar failed"
+	fi
+	emit
+	rm -rf "$tmp"
+}
+
+# restore_backup <base64> -> { code }
+# Receives a base64-encoded tar.gz, decodes, extracts over /etc/config/bypass.
+do_restore_backup() {
+	local b64=$1 tmp tarball members member_type candidate target_tmp
+	[ -z "$b64" ] && { json_init; json_add_int code -1; json_add_string error "missing backup data"; emit; return; }
+	[ ${#b64} -le 4194304 ] 2>/dev/null || {
+		json_init; json_add_int code -1; json_add_string error "backup is too large"; emit; return;
+	}
+	tmp=$(mktemp -d 2>/dev/null) || { json_init; json_add_int code -1; json_add_string error "mktemp failed"; emit; return; }
+	tarball="$tmp/restore.tar.gz"
+	if ! printf '%s' "$b64" | base64 -d > "$tarball" 2>/dev/null; then
+		members=""
+	else
+		members=$(tar -tzf "$tarball" 2>/dev/null) || members=""
+	fi
+	member_type=$(tar -tvzf "$tarball" 2>/dev/null | awk 'NR == 1 { print substr($1, 1, 1) }')
+	if { [ "$members" = "etc/config/bypass" ] || [ "$members" = "./etc/config/bypass" ]; } && \
+	   [ "$member_type" = "-" ]; then
+		mkdir -p "$tmp/extract"
+		local extract_ok=0
+		( ulimit -f 6144 2>/dev/null; tar -C "$tmp/extract" -xzf "$tarball" "$members" ) 2>/dev/null && extract_ok=1
+		candidate="$tmp/extract/${members#./}"
+		if [ "$extract_ok" = "1" ] && [ -s "$candidate" ] && [ -f "$candidate" ] && [ ! -L "$candidate" ] && \
+		   [ "$(wc -c <"$candidate" 2>/dev/null)" -le 3145728 ] 2>/dev/null && \
+		   uci -q -c "$tmp/extract/etc/config" show bypass >/dev/null 2>&1; then
+			# Replace atomically from the destination directory.  cp directly onto
+			# /etc/config/bypass would follow a pre-existing destination symlink.
+			target_tmp="/etc/config/.bypass.restore.$$"
+			if cp "$candidate" "$target_tmp" 2>/dev/null && \
+			   chmod 600 "$target_tmp" 2>/dev/null && \
+			   mv -f "$target_tmp" /etc/config/bypass 2>/dev/null; then
+				json_init
+				json_add_int code 0
+				json_add_string msg "restored; restart bypass to apply"
+			else
+				rm -f "$target_tmp"
+				json_init
+				json_add_int code -1
+				json_add_string error "failed to install restored configuration"
+			fi
+		else
+			json_init
+			json_add_int code -1
+			json_add_string error "backup does not contain a valid config"
+		fi
+	else
+		json_init
+		json_add_int code -1
+		json_add_string error "invalid backup archive"
+	fi
+	emit
+	rm -rf "$tmp"
+}
+
+# rpcd output and Linux argv are much smaller than a useful backup. Receive
+# base64 in bounded chunks, then call the same archive validator in-process.
+do_upload() {
+	local operation=$1 maximum
+	shift
+	case "$operation" in
+		backup) maximum=4194304 ;;
+		direct-ip) maximum=262144 ;;
+		*) return 1 ;;
+	esac
+	local token=$1 offset=$2 chunk=$3 finished=$4 root="$TMP_PATH/$operation-upload" dir size rc
+	json_init
+	if ! uint_in_range "$offset" 0 "$maximum" || [ "${#chunk}" -gt 16384 ] ||
+	   { [ "$finished" != "0" ] && [ "$finished" != "1" ]; } ||
+	   printf '%s' "$chunk" | grep -q '[^A-Za-z0-9+/=]'; then
+		json_add_int code -1; json_add_string error "invalid backup chunk"; emit; return
+	fi
+	if [ "$token" = "new" ] && [ "$offset" = "0" ]; then
+		mkdir -p "$root" || { json_add_int code -1; json_add_string error "cannot create upload directory"; emit; return; }
+		# Reuse the stream cleanup policy for abandoned uploads as well.
+		local old
+		for old in "$root"/result.*; do
+			[ -d "$old" ] || continue
+			[ "$(find "$old" -prune -mmin +10 -print 2>/dev/null)" = "$old" ] && rm -rf "$old"
+		done
+		dir=$(mktemp -d "$root/result.XXXXXX") || { json_add_int code -1; json_add_string error "cannot create upload"; emit; return; }
+		token=${dir##*/}
+	else
+		case "$token" in
+			result.??????) ;;
+			*) json_add_int code -1; json_add_string error "invalid backup token"; emit; return ;;
+		esac
+		case "${token#result.}" in
+			*[!A-Za-z0-9]*) json_add_int code -1; json_add_string error "invalid backup token"; emit; return ;;
+		esac
+		dir="$root/$token"
+	fi
+	if [ ! -d "$dir" ] || [ -L "$dir" ] || [ -L "$dir/data" ]; then
+		json_add_int code -1; json_add_string error "backup upload expired"; emit; return
+	fi
+	# Reject overlapping requests and replayed/out-of-order chunks.
+	exec 6>"$dir/lock" || { json_add_int code -1; json_add_string error "cannot open upload lock"; emit; return; }
+	flock -xn 6 || { exec 6>&-; json_add_int code -1; json_add_string error "backup upload busy"; emit; return; }
+	size=0
+	[ ! -f "$dir/data" ] || size=$(wc -c < "$dir/data" | tr -d '[:space:]')
+	if [ "$size" != "$offset" ] || [ $((size + ${#chunk})) -gt "$maximum" ]; then
+		exec 6>&-
+		json_add_int code -1; json_add_string error "backup chunk offset or size is invalid"; emit; return
+	fi
+	if ! printf '%s' "$chunk" >> "$dir/data"; then
+		exec 6>&-
+		json_add_int code -1; json_add_string error "cannot save backup chunk"; emit; return
+	fi
+	touch "$dir"
+	if [ "$finished" = "1" ]; then
+		case "$operation" in
+			backup) do_restore_backup "$(cat "$dir/data")" ;;
+			direct-ip) do_set_direct_ip "$(cat "$dir/data")" ;;
+		esac
+		rc=$?
+		rm -rf "$dir"
+		exec 6>&-
+		return "$rc"
+	fi
+	exec 6>&-
+	json_add_int code 0
+	json_add_string token "$token"
+	json_add_int next_offset $((size + ${#chunk}))
+	emit
+}
+
+# reset_config -> { code }
+# Restore factory defaults: stop the service, copy 0_default_config, clear log.
+do_reset_config() {
+	local config_tmp=/etc/config/.bypass.reset.$$ direct_tmp=/usr/share/bypass/.direct_ip.reset.$$
+	json_init
+	if [ -n "${IPKG_INSTROOT}" ]; then
+		json_add_int code -1
+		json_add_string error "reset is unavailable during package installation"
+	elif /etc/init.d/bypass stop >/dev/null 2>&1 && \
+	     cp /usr/share/bypass/0_default_config "$config_tmp" 2>/dev/null && \
+	     chmod 600 "$config_tmp" 2>/dev/null && \
+	     cp /usr/share/bypass/0_default_direct_ip "$direct_tmp" 2>/dev/null && \
+	     chmod 644 "$direct_tmp" 2>/dev/null && \
+	     mv -f "$config_tmp" /etc/config/bypass 2>/dev/null && \
+	     mv -f "$direct_tmp" /usr/share/bypass/direct_ip 2>/dev/null; then
+		: > /tmp/log/bypass.log 2>/dev/null
+		stop_crontab
+		# Do not reload rpcd inside its own file.exec request: doing so can
+		# truncate this JSON response in exactly the same way as opkg upgrades.
+		json_add_int code 0
+	else
+		rm -f "$config_tmp" "$direct_tmp"
+		json_add_int code -1
+		json_add_string error "failed to restore the factory configuration"
+	fi
+	emit
+}
+
+# get_direct_ip / set_direct_ip <base64>
+# Keep the editable Passwall2-style direct list outside UCI. nft --check is the
+# authoritative validator for literal IPv4/IPv6 prefixes; geoip:CODE entries
+# are expanded by nftables.sh when the service starts.
+do_get_direct_ip() {
+	local stream_dir
+	cleanup_geo_view_streams
+	json_init
+	if [ -f /usr/share/bypass/direct_ip ] && [ ! -L /usr/share/bypass/direct_ip ] && \
+	   [ "$(wc -c </usr/share/bypass/direct_ip 2>/dev/null)" -le 196608 ] 2>/dev/null; then
+		json_add_int code 0
+		if [ "$(wc -c </usr/share/bypass/direct_ip)" -le "$GEO_VIEW_INLINE_BYTES" ]; then
+			json_add_string direct_ip "$(cat /usr/share/bypass/direct_ip 2>/dev/null)"
+		else
+			mkdir -p "$TMP_PATH/geo-view"
+			stream_dir=$(mktemp -d "$TMP_PATH/geo-view/result.XXXXXX") || {
+				json_init; json_add_int code -1; json_add_string error "cannot stream Direct IP List"; emit; return
+			}
+			# Base64 keeps UTF-8 comments intact across arbitrary byte boundaries.
+			if ! base64 /usr/share/bypass/direct_ip > "$stream_dir/encoded"; then
+				rm -rf "$stream_dir"
+				json_init; json_add_int code -1; json_add_string error "cannot encode Direct IP List"; emit; return
+			fi
+			if ! tr -d '\n' < "$stream_dir/encoded" > "$stream_dir/output"; then
+				rm -rf "$stream_dir"
+				json_init; json_add_int code -1; json_add_string error "cannot stream Direct IP List"; emit; return
+			fi
+			json_add_string direct_ip_stream "${stream_dir##*/}"
+		fi
+	else
+		json_add_int code -1
+		json_add_string error "Direct IP List is not a safe regular file"
+	fi
+	emit
+}
+
+do_set_direct_ip() {
+	local encoded=$1 tmp input rules line v4="" v6="" nft_bin table saved=0
+	local ip_cidr_re='^([0-9]{1,3}\.){3}[0-9]{1,3}(/[0-9]{1,2})?$|^([0-9A-Fa-f]{1,4}:)+[0-9A-Fa-f:.]*(/[0-9]{1,3})?$|^[0-9A-Fa-f:.]*:[0-9A-Fa-f:.]*(/[0-9]{1,3})?$'
+	json_init
+	[ ${#encoded} -le 262144 ] 2>/dev/null || {
+		json_add_int code -1
+		json_add_string error "Direct IP List is too large"
+		emit
+		return
+	}
+	tmp=$(mktemp -d 2>/dev/null) || {
+		json_add_int code -1
+		json_add_string error "mktemp failed"
+		emit
+		return
+	}
+	input="$tmp/direct_ip"
+	rules="$tmp/validate.nft"
+	if ! printf '%s' "$encoded" | base64 -d > "$input" 2>/dev/null; then
+		json_add_int code -1
+		json_add_string error "invalid Direct IP data"
+		emit
+		rm -rf "$tmp"
+		return
+	fi
+	sed -i 's/\r$//' "$input"
+	while IFS= read -r line || [ -n "$line" ]; do
+		line=$(printf '%s' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+		case "$line" in
+			''|'#'*) continue ;;
+			geoip:*)
+				echo "$line" | grep -qE '^geoip:[A-Za-z0-9_-]+$' || {
+					json_add_int code -1
+					json_add_string error "invalid Direct IP entry: $line"
+					emit
+					rm -rf "$tmp"
+					return
+				}
+				continue
+				;;
+			*)
+				# Do not splice arbitrary user text into the nft rules passed to
+				# --check. This structural allowlist rejects nft syntax before
+				# nft validates address octets and prefix lengths.
+				printf '%s\n' "$line" | grep -qE "$ip_cidr_re" || {
+					json_add_int code -1
+					json_add_string error "invalid Direct IP entry: $line"
+					emit
+					rm -rf "$tmp"
+					return
+				}
+				case "$line" in
+					*:*) v6="${v6:+$v6, }$line" ;;
+					*) v4="${v4:+$v4, }$line" ;;
+				esac
+				;;
+		esac
+	done < "$input"
+	table="bypass_validate_$$"
+	cat > "$rules" <<-EOF
+	table inet $table {
+		set direct4 { type ipv4_addr; flags interval; auto-merge; elements = { $v4 } }
+		set direct6 { type ipv6_addr; flags interval; auto-merge; elements = { $v6 } }
+	}
+	EOF
+	nft_bin=$(first_type /usr/sbin/nft nft)
+	if [ -z "$nft_bin" ] || ! "$nft_bin" --check -f "$rules" >/dev/null 2>&1; then
+		json_add_int code -1
+		json_add_string error "Direct IP List contains an invalid IP address or CIDR"
+	else
+		# Normalize line endings but retain comments and ordering exactly.
+		local direct_tmp=/usr/share/bypass/.direct_ip.write.$$
+		if cp "$input" "$direct_tmp" 2>/dev/null && chmod 644 "$direct_tmp" 2>/dev/null && \
+		   mv -f "$direct_tmp" /usr/share/bypass/direct_ip 2>/dev/null; then
+			json_add_int code 0
+			saved=1
+		else
+			rm -f "$direct_tmp"
+			json_add_int code -1
+			json_add_string error "failed to save Direct IP List"
+		fi
+	fi
+	emit
+	rm -rf "$tmp"
+	if [ "$saved" = "1" ] && [ "$(uci -q get bypass.@global[0].enabled)" = "1" ]; then
+		( sleep 1; /etc/init.d/bypass restart ) >/dev/null 2>&1 &
+	fi
+}
+
+usage() {
+	echo "Usage: $0 {status|route_test|observe|resolve|node_tcp_probe|node_udp_probe|node_urltest|wireguard_keypair|wireguard_psk|rule_update|rule_update_status|log_tail|clear_log|clear_nftset|interfaces|connect_status|geo_view|create_backup|restore_backup|reset_config|get_direct_ip|set_direct_ip} [args]" >&2
+}
+
+main() {
+	local action=$1
+	shift
+	case "$action" in
+		status)         do_status ;;
+		route_test)     do_route_test "$1" ;;
+		observe)        do_observe ;;
+		resolve)        do_resolve "$1" ;;
+		node_tcp_probe) do_node_tcp_probe "$1" ;;
+		node_udp_probe) do_node_udp_probe "$1" ;;
+		node_urltest)   do_node_urltest "$1" "$2" ;;
+		wireguard_keypair) do_wireguard_keypair ;;
+		wireguard_psk) do_wireguard_psk ;;
+		rule_update)    do_rule_update ;;
+		rule_update_status) do_rule_update_status "$1" ;;
+		log_tail)       do_log_tail "$1" ;;
+		clear_log)      do_clear_log ;;
+		clear_nftset)   do_clear_nftset ;;
+		interfaces)     do_interfaces ;;
+		connect_status) do_connect_status "$1" "$2" ;;
+		geo_view)       do_geo_view "$1" "$2" "$3" ;;
+		create_backup)  do_create_backup ;;
+		restore_backup) do_restore_backup "$1" ;;
+		restore_backup_upload) do_upload backup "$1" "$2" "$3" "$4" ;;
+		reset_config)   do_reset_config ;;
+		get_direct_ip)  do_get_direct_ip ;;
+		set_direct_ip)  do_set_direct_ip "$1" ;;
+		set_direct_ip_upload) do_upload direct-ip "$1" "$2" "$3" "$4" ;;
+		*) usage; exit 1 ;;
+	esac
+}
+
+main "$@"

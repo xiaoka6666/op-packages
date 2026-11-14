@@ -1,0 +1,152 @@
+#!/bin/sh
+
+START=99
+STOP=15
+
+. ${IPKG_INSTROOT}/usr/share/bypass/utils.sh
+APP_FILE=${APP_PATH}/app.sh
+LOCK_FILE_DIR=/var/lock
+LOCK_FILE=${LOCK_FILE_DIR}/${CONFIG}.lock
+READY_FILE=${LOCK_FILE_DIR}/${CONFIG}_ready.lock
+BOOTING_FILE=${LOCK_FILE_DIR}/${CONFIG}_booting.lock
+STOPPED_FILE=${LOCK_FILE_DIR}/${CONFIG}_stopped.lock
+
+set_lock() {
+	[ ! -d "$LOCK_FILE_DIR" ] && mkdir -p "$LOCK_FILE_DIR"
+	exec 9>"$LOCK_FILE"
+	# BusyBox flock supports non-blocking locking but not util-linux timed waits.
+	# Retry the non-blocking operation so LuCI and hotplug restarts serialize.
+	local tries=0
+	while ! flock -xn 9; do
+		tries=$((tries + 1))
+		if [ "$tries" -ge 30 ]; then
+			exec 9>&-
+			return 1
+		fi
+		sleep 1
+	done
+}
+
+unset_lock() {
+	flock -u 9 2>/dev/null
+	exec 9>&-
+}
+
+update_ready_file() {
+	local rc=$1
+	if [ "$rc" = "0" ] && [ "$(uci -q get ${CONFIG}.@global[0].enabled)" = "1" ] && \
+	   process_alive bypasscore && bypasscore_ready; then
+		touch "$READY_FILE"
+	else
+		rm -f "$READY_FILE"
+	fi
+	rmdir /var/lock/bypass_recovering 2>/dev/null
+}
+
+boot_func() {
+	local delay attempt=1 rc=1
+	trap 'rm -f "$BOOTING_FILE"' EXIT INT TERM
+	delay=$(uci -q get ${CONFIG}.@global_delay[0].start_delay 2>/dev/null || echo 60)
+	uint_in_range "$delay" 0 86400 || {
+		log 0 "Invalid start delay [%s]; using 60 seconds." "$delay"
+		delay=60
+	}
+	[ "$delay" -gt 0 ] 2>/dev/null && {
+		log 0 "Start after a delay of %s seconds." "$delay"
+		sleep "$delay"
+	}
+	while [ "$attempt" -le 3 ]; do
+		# An explicit stop/start/restart during the boot delay cancels this job.
+		[ -f "$BOOTING_FILE" ] || { rc=0; break; }
+		restart boot && { rc=0; break; }
+		[ "$attempt" = "3" ] && break
+		log 0 "Boot startup attempt %s failed; retrying in 10 seconds." "$attempt"
+		attempt=$((attempt + 1))
+		sleep 10
+	done
+	rm -f "$BOOTING_FILE"
+	trap - EXIT INT TERM
+	return "$rc"
+}
+
+boot() {
+	mkdir -p "$LOCK_FILE_DIR" || return 1
+	rm -f "$STOPPED_FILE"
+	touch "$BOOTING_FILE"
+	boot_func >/dev/null 2>&1 &
+}
+
+start() {
+	rm -f "$BOOTING_FILE"
+	set_lock || { log 0 "Timed out waiting for another service operation before start."; return 1; }
+	rm -f "$STOPPED_FILE"
+	$APP_FILE start
+	local rc=$?
+	update_ready_file "$rc"
+	unset_lock
+	return $rc
+}
+
+stop() {
+	rm -f "$BOOTING_FILE"
+	set_lock || { log 0 "Timed out waiting for another service operation before stop."; return 1; }
+	touch "$STOPPED_FILE"
+	rm -f "$READY_FILE"
+	$APP_FILE stop
+	unset_lock
+}
+
+restart() {
+	case "$1" in boot|recovery) ;; *) rm -f "$BOOTING_FILE" ;; esac
+	set_lock || { log 0 "Timed out waiting for another service operation before restart."; return 1; }
+	# Automatic work may have waited behind an explicit stop. Recheck after
+	# acquiring the lifecycle lock so a queued recovery cannot undo that stop.
+	case "$1" in
+		boot)
+			[ -f "$BOOTING_FILE" ] || { unset_lock; return 0; }
+			;;
+		recovery)
+			if [ -f "$STOPPED_FILE" ] || [ -f "$BOOTING_FILE" ] || \
+			   [ "$(uci -q get ${CONFIG}.@global[0].enabled)" != "1" ]; then
+				unset_lock
+				return 0
+			fi
+			;;
+	esac
+	rm -f "$STOPPED_FILE"
+	rm -f "$READY_FILE"
+	$APP_FILE stop
+	$APP_FILE start $1
+	local rc=$?
+	update_ready_file "$rc"
+	unset_lock
+	return $rc
+}
+
+reload() {
+	set_lock || { log 0 "Timed out waiting for another service operation before reload."; return 1; }
+	$APP_FILE reload_core
+	local rc=$? full_restart=0
+	if [ "$rc" = "2" ]; then
+		full_restart=1
+		log 0 "Reload touches external runtime state; performing a full restart."
+		rm -f "$READY_FILE"
+		$APP_FILE stop
+		$APP_FILE start
+		rc=$?
+	fi
+	# Only a rejected live candidate leaves the previous snapshot ready.
+	[ "$rc" = "1" ] && [ "$full_restart" = "0" ] || update_ready_file "$rc"
+	unset_lock
+	return "$rc"
+}
+
+extra_command "status" "Check whether Bypass is running"
+status() {
+	if [ -f "$READY_FILE" ] && process_alive bypasscore && bypasscore_ready; then
+		echo "Bypass is running."
+		return 0
+	fi
+	echo "Bypass is not running."
+	return 1
+}

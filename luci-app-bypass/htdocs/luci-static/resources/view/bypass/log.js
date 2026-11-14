@@ -1,0 +1,75 @@
+'use strict';
+'require view';
+'require fs';
+'require ui';
+'require poll';
+
+// Runtime Logs — mirrors passwall2's log/log.htm: a readonly textarea polled
+// every 5 seconds via api.sh log_tail, a Clear button, and auto-scroll-to-
+// bottom when the user is already at the bottom.
+
+function api(/* action, ...args */) {
+	return fs.exec('/usr/share/bypass/api.sh', Array.prototype.slice.call(arguments)).then(function (res) {
+		try { return JSON.parse(res.stdout || '{}'); }
+		catch (e) { return { code: -1, error: 'bad JSON' }; }
+	}).catch(function (e) { return { code: -1, error: String(e) }; });
+}
+
+return view.extend({
+	render: function () {
+		var ta = E('textarea', {
+			class: 'cbi-input-textarea',
+			id: 'bypass_log_textarea',
+			style: 'width:100%;margin-top:10px;font-family:monospace;font-size:12px',
+			rows: 40,
+			wrap: 'off',
+			readonly: 'readonly'
+		});
+
+		var firstLoad = true;
+		function isAtBottom() {
+			return (ta.scrollTop + ta.clientHeight + 4) >= ta.scrollHeight;
+		}
+
+		function refreshLog() {
+			var wasBottom = isAtBottom();
+			return api('log_tail', '500').then(function (r) {
+				if (r.log_base64 != null) {
+					var bytes = Uint8Array.from(atob(r.log_base64), function (c) { return c.charCodeAt(0); });
+					ta.value = new TextDecoder().decode(bytes);
+				} else ta.value = r.log || (r.error ? _('Error: ') + r.error : '');
+				// Auto-scroll on first load, or if the user was already at the bottom.
+				if (firstLoad || wasBottom) {
+					ta.scrollTop = ta.scrollHeight;
+					firstLoad = false;
+				}
+			});
+		}
+
+		var clearBtn = E('button', {
+			type: 'button',
+			class: 'cbi-button cbi-button-remove',
+			click: function () {
+				api('clear_log').then(function (r) {
+					if (r.code === 0) {
+						ta.value = '';
+						ta.scrollTop = ta.scrollHeight;
+					} else ui.addNotification(null, E('p', {}, r.error || _('Operation failed.')));
+				});
+			}
+		}, _('Clear logs'));
+
+		// Start polling every 5 seconds (matches passwall2).
+		refreshLog();
+		poll.add(refreshLog, 5);
+
+		return E('div', { class: 'cbi-map', style: 'margin-bottom:2rem' }, [
+			E('div', { style: 'margin-bottom:8px' }, [clearBtn]),
+			ta
+		]);
+	},
+
+	handleReset: null,
+	handleSaveApply: null,
+	handleSave: null
+});

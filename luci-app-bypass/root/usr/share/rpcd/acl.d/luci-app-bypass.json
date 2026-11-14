@@ -1,17 +1,21 @@
 {
 	"luci-app-bypass": {
-		"description": "Grant UCI access for luci-app-bypass",
+		"description": "Bypass (NaiveProxy + BypassCore) access",
 		"read": {
-			"file": {
-				"/etc/bypass/*": [ "read" ]
-			},
-			"uci": [ "bypass" ]
+			"uci": ["bypass"],
+			"ubus": {
+				"uci": ["changes", "get"]
+			}
 		},
 		"write": {
-			"file": {
-				"/etc/bypass/*": [ "write" ]
+			"uci": ["bypass"],
+			"ubus": {
+				"uci": ["add", "apply", "confirm", "delete", "order", "rename", "set"],
+				"file": ["exec"]
 			},
-			"uci": [ "bypass" ]
+			"file": {
+				"/usr/share/bypass/api.sh": ["exec"]
+			}
 		}
 	}
 }

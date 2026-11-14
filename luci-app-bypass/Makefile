@@ -1,103 +1,91 @@
+# Copyright (c) 2026 Eugene Chan
+# SPDX-License-Identifier: MIT
+# This is free software, licensed under the MIT License.
+
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-bypass
-PKG_VERSION:=1.2
-PKG_RELEASE:=1
+PKG_VERSION:=2.1.6
+PKG_RELEASE:=2
+PKG_PO_VERSION:=$(PKG_VERSION)
+PKG_LICENSE:=MIT
+PKG_LICENSE_FILES:=LICENSE
+PKG_MAINTAINER:=Eugene Chan
 
+# Build-system symbols that, when toggled in menuconfig, should trigger a rebuild.
 PKG_CONFIG_DEPENDS:= \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Server \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Client \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Client \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Server \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Simple_obfs \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Simple_obfs_server \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_V2ray_plugin \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Xray \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Trojan \
 	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_NaiveProxy \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Kcptun \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Hysteria \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Socks5_Proxy \
-	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Socks_Server
+	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_Geoview \
+	CONFIG_PACKAGE_$(PKG_NAME)_INCLUDE_V2ray_Geo
 
-LUCI_TITLE:=SS/SSR/Xray/Trojan/NaiveProxy/Socks5/Tun LuCI interface
+LUCI_TITLE:=LuCI support for Bypass (NaiveProxy + WireGuard + BypassCore)
 LUCI_PKGARCH:=all
-LUCI_DEPENDS:=+ipset +kmod-ipt-nat +ip-full +iptables-mod-tproxy +lua-neturl +dnsmasq-full +smartdns +coreutils +coreutils-base64 +curl +tcping +chinadns-ng +lua +luci-compat +luci-lib-ipkg +unzip \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Server:shadowsocks-libev-ss-server \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Client:shadowsocks-libev-ss-local \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Client:shadowsocks-libev-ss-redir \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Client:shadowsocksr-libev-ssr-local \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Client:shadowsocksr-libev-ssr-redir \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Server:shadowsocksr-libev-ssr-server \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Simple_obfs:simple-obfs \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_V2ray_plugin:v2ray-plugin \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Xray:xray-core \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Trojan:trojan-plus \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_NaiveProxy:naiveproxy \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Kcptun:kcptun-client \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Hysteria:hysteria \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Socks5_Proxy:redsocks2 \
-	+PACKAGE_$(PKG_NAME)_INCLUDE_Socks_Server:microsocks
+
+# This application only supports fw4/nftables. Keep the firewall userspace and
+# kernel expressions as runtime dependencies so installing the generated
+# package also installs everything required by REDIRECT and TPROXY modes.
+LUCI_DEPENDS:=+ca-bundle +coreutils-base64 +curl +ip-full +resolveip +libubox \
+	+nftables +kmod-nft-nat +kmod-nft-tproxy +kmod-nft-socket
 
 define Package/$(PKG_NAME)/config
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Client
-	bool "Include Shadowsocks Libev Client"
-	default y if i386||x86_64||arm||aarch64
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_Shadowsocks_Libev_Server
-	bool "Include Shadowsocks Libev Server"
-	default y if i386||x86_64||arm||aarch64
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Client
-	bool "Include ShadowsocksR Libev Client"
-	default y
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_ShadowsocksR_Libev_Server
-	bool "Include ShadowsocksR Libev Server"
-	default y if i386||x86_64||aarch64
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_Simple_Obfs
-	bool "Include Shadowsocks Simple Obfs Plugin"
-	default y
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_V2ray_plugin
-	bool "Include Shadowsocks V2ray Plugin"
-	default n
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_Xray
-	bool "Include Xray"
-	default y
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_Trojan
-	bool "Include Trojan"
-	default y if i386||x86_64||arm||aarch64
+menu "Configuration"
+	depends on PACKAGE_$(PKG_NAME)
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_NaiveProxy
-	bool "Include NaiveProxy"
-	depends on !(arc||armeb||mips||mips64||powerpc)
+	bool "Include NaiveProxy (https proxy core)"
+	depends on !(arc||armeb||loongarch64||mips||mips64||powerpc||TARGET_gemini)
+	select PACKAGE_naiveproxy
 	default n
 
-config PACKAGE_$(PKG_NAME)_INCLUDE_Kcptun
-	bool "Include Kcptun"
+config PACKAGE_$(PKG_NAME)_INCLUDE_Geoview
+	bool "Include Geoview (geodata query tool)"
+	select PACKAGE_geoview
 	default n
 
-config PACKAGE_$(PKG_NAME)_INCLUDE_Hysteria
-	bool "Include Hysteria"
+config PACKAGE_$(PKG_NAME)_INCLUDE_V2ray_Geo
+	bool "Include v2ray-geoip / v2ray-geosite (geoip.dat / geosite.dat)"
+	select PACKAGE_v2ray-geoip
+	select PACKAGE_v2ray-geosite
 	default n
 
-config PACKAGE_$(PKG_NAME)_INCLUDE_Socks5_Proxy
-	bool "Include Socks5 Transparent Proxy"
-	default n
-
-config PACKAGE_$(PKG_NAME)_INCLUDE_Socks_Server
-	bool "Include Socks Sever"
-	default y
+endmenu
 endef
 
 define Package/$(PKG_NAME)/conffiles
 /etc/config/bypass
-/etc/bypass/
+/usr/share/bypass/direct_ip
+endef
+
+# OpenWrt's default_postinst synchronously starts every packaged /etc/init.d
+# script. Bypass performs readiness checks during start, which can outlive the
+# LuCI package-manager RPC and leave it with an empty/truncated JSON response.
+# The uci-defaults setup installs/enables the tiny init wrapper from the
+# canonical copy under /usr/share, so it is deliberately not packaged directly
+# below /etc/init.d and therefore is not auto-started inside opkg.
+define Package/$(PKG_NAME)/postinst
+	[ -n "$${IPKG_INSTROOT}" ] || { \
+		rm -f /tmp/luci-indexcache /tmp/luci-indexcache.*
+		rm -rf /tmp/luci-modulecache/
+		if [ "$$(uci -q get bypass.@global[0].enabled)" = "1" ]; then
+			( . /usr/share/bypass/utils.sh
+				wait_for_apk_transaction
+				sleep 2
+				/etc/init.d/bypass restart
+			) </dev/null >/dev/null 2>&1 &
+		fi
+		exit 0
+	}
+endef
+
+# /etc/init.d/bypass is generated by uci-defaults and consequently is not in
+# opkg's file list. Remove it on a real uninstall, but keep it across upgrades.
+define Package/$(PKG_NAME)/prerm
+	[ -n "$${IPKG_INSTROOT}" ] || [ "$${PKG_UPGRADE}" = "1" ] || { \
+		/etc/init.d/bypass stop >/dev/null 2>&1
+		/usr/share/bypass/app.sh remove_crontab >/dev/null 2>&1
+		/etc/init.d/bypass disable >/dev/null 2>&1
+		rm -f /etc/init.d/bypass
+	}
 endef
 
 include $(TOPDIR)/feeds/luci/luci.mk

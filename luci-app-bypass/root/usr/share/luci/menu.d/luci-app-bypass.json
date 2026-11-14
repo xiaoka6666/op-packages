@@ -1,0 +1,110 @@
+{
+	"admin/services/bypass": {
+		"title": "Bypass",
+		"order": 90,
+		"action": {
+			"type": "firstchild",
+			"recursive": true
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/basic_settings": {
+		"title": "Basic Settings",
+		"order": 1,
+		"action": {
+			"type": "view",
+			"path": "bypass/basic_settings"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/node_list": {
+		"title": "Node List",
+		"order": 2,
+		"action": {
+			"type": "view",
+			"path": "bypass/node_list"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/other_settings": {
+		"title": "Other Settings",
+		"order": 3,
+		"action": {
+			"type": "view",
+			"path": "bypass/other_settings"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/rule_manage": {
+		"title": "Rule Manage",
+		"order": 4,
+		"action": {
+			"type": "view",
+			"path": "bypass/rule_manage"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/file_location": {
+		"title": "File Location",
+		"order": 5,
+		"action": {
+			"type": "view",
+			"path": "bypass/file_location"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/geo_view": {
+		"title": "Geo View",
+		"order": 6,
+		"action": {
+			"type": "view",
+			"path": "bypass/geo_view"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/log": {
+		"title": "Runtime Logs",
+		"order": 7,
+		"action": {
+			"type": "view",
+			"path": "bypass/log"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/node_config": {
+		"order": 90,
+		"action": {
+			"type": "view",
+			"path": "bypass/node_config"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	},
+	"admin/services/bypass/rule_edit": {
+		"order": 91,
+		"action": {
+			"type": "view",
+			"path": "bypass/rule_edit"
+		},
+		"depends": {
+			"acl": ["luci-app-bypass"]
+		}
+	}
+}

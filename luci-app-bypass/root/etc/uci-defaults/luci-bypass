@@ -1,28 +1,38 @@
-[ ! -f "/usr/share/ucitrack/luci-app-bypass.json" ] && {
-    cat > /usr/share/ucitrack/luci-app-bypass.json << EEOF
-{
-    "config": "bypass",
-    "init": "bypass"
-}
-EEOF
-}
-uci batch <<EOF
-	delete ucitrack.@bypass[-1]
-	add ucitrack bypass
-	set ucitrack.@bypass[-1].init=bypass
-	commit ucitrack
-	delete firewall.bypass
-	set firewall.bypass=include
-	set firewall.bypass.type=script
-	set firewall.bypass.path=/var/etc/bypass.include
-	set firewall.bypass.reload=1
-	commit firewall
-EOF
+#!/bin/sh
 
-chmod +x /etc/init.d/bypass /usr/share/bypass/* >/dev/null 2>&1
-rm -rf /tmp/luci-*
+umask 077
 
-grep -q ip-api.com /etc/bypass/black.list ||
-	sed -i '$a ip-api.com' /etc/bypass/black.list
+# Install defaults only for a fresh configuration. Existing UCI state is never
+# rewritten automatically; current code supplies safe defaults for absent keys.
+[ -e /etc/config/bypass ] || cp /usr/share/bypass/0_default_config /etc/config/bypass
+[ -f /etc/config/bypass ] && [ ! -L /etc/config/bypass ] && chmod 600 /etc/config/bypass 2>/dev/null
+
+chmod +x /usr/share/bypass/*.sh 2>/dev/null
+[ -e /usr/share/bypass/direct_ip ] || \
+	cp /usr/share/bypass/0_default_direct_ip /usr/share/bypass/direct_ip
+[ -f /usr/share/bypass/direct_ip ] && [ ! -L /usr/share/bypass/direct_ip ] && \
+	chmod 644 /usr/share/bypass/direct_ip 2>/dev/null
+
+# Refresh the tiny init wrapper from its canonical package copy. This is
+# executable/package plumbing, not a configuration migration.
+if [ -s /usr/share/bypass/bypass.init ]; then
+	init_tmp=/etc/init.d/.bypass.install.$$
+	cp /usr/share/bypass/bypass.init "$init_tmp" && chmod 755 "$init_tmp" && \
+		mv -f "$init_tmp" /etc/init.d/bypass
+	rm -f "$init_tmp"
+	rm -f /etc/init.d/bypass.apk-new /etc/init.d/bypass-opkg 2>/dev/null
+	/etc/init.d/bypass enable >/dev/null 2>&1
+fi
+
+# Register the runtime-generated firewall include once.
+uci -q get firewall.bypass >/dev/null 2>&1 || {
+	uci -q set firewall.bypass=include
+	uci -q set firewall.bypass.type=script
+	uci -q set firewall.bypass.path=/var/etc/bypass.include
+	if [ -x /etc/init.d/firewall ] && grep -q fw4 /etc/init.d/firewall 2>/dev/null; then
+		uci -q set firewall.bypass.reload=1
+	fi
+	uci -q commit firewall
+}
 
 exit 0

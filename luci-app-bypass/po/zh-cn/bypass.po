@@ -1,739 +1,1476 @@
-msgid "Base Setting"
-msgstr "基本设置"
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-bypass\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-14 08:55+0800\n"
+"PO-Revision-Date: 2026-07-13\n"
+"Last-Translator: eugene\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh-cn\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
 
-msgid "Bypass Settings"
-msgstr "Bypass 设置"
+#: htdocs/luci-static/resources/view/bypass/node_list.js
+msgid "URL Test"
+msgstr "URL 测试"
 
-msgid "Support SS/SSR/XRAY/TROJAN/NAIVEPROXY/SOCKS5/TUN etc."
-msgstr "支持 SS/SSR/Xray/Trojan/NavieProxy/Socks5/TUN 等协议"
+#: htdocs/luci-static/resources/view/bypass/node_list.js
+msgid "URL Test Address"
+msgstr "URL 测试地址"
 
-msgid "Bypass RUNNING"
-msgstr "Bypass 客户端运行中"
+#: htdocs/luci-static/resources/view/bypass/node_list.js
+msgid "Cloudflare"
+msgstr "Cloudflare"
 
-msgid "Bypass NOT RUNNING"
-msgstr "Bypass 客户端未运行"
+#: htdocs/luci-static/resources/view/bypass/node_list.js
+msgid "Gstatic"
+msgstr "Gstatic"
 
-msgid "Main Server"
-msgstr "主服务器"
+#: htdocs/luci-static/resources/view/bypass/node_list.js
+msgid "YouTube"
+msgstr "YouTube"
 
-msgid "Enable"
-msgstr "启用"
+#: htdocs/luci-static/resources/view/bypass/node_list.js
+msgid "MIUI (CN)"
+msgstr "MIUI（国内）"
 
+#: htdocs/luci-static/resources/view/bypass/node_list.js
+msgid "HiCloud (CN)"
+msgstr "华为云（国内）"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js
+msgid "VIVO (CN)"
+msgstr "VIVO（国内）"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:21
+#: htdocs/luci-static/resources/view/bypass/node_config.js:27
+msgid "Node Config"
+msgstr "节点配置"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:22
+msgid "No node selected"
+msgstr "未选择节点"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:23
+msgid "Pick a node from the Node List to edit, or add a new one there."
+msgstr "请从“节点列表”中选择一个节点编辑，或在那里新增。"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:28
+msgid "NaiveProxy node (https)."
+msgstr "NaiveProxy 节点（https）。"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:29
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:296
+msgid "Node"
+msgstr "节点"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:33
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:174
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:34
+#: htdocs/luci-static/resources/view/bypass/node_list.js:59
+msgid "Remarks"
+msgstr "备注"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:36
+msgid "Address (server)"
+msgstr "地址（服务器）"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:37
+msgid "Domain or IP of the NaiveProxy server."
+msgstr "NaiveProxy 服务器的域名或 IP。"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:41
+msgid "Port"
+msgstr "端口"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:46
+msgid "Username"
+msgstr "用户名"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:48
+msgid "Password"
+msgstr "密码"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:25
+msgid "Enter a valid time in HH:MM format."
+msgstr "请输入有效的 HH:MM 格式时间。"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:43
+msgid "Rule status"
+msgstr "规则版本"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:48
+msgid "GeoIP Update URL"
+msgstr "GeoIP 更新 URL"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:49
+msgid "Loyalsoldier/geoip"
+msgstr "Loyalsoldier/geoip"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:50
+msgid "Loyalsoldier/geoip (gh-proxy)"
+msgstr "Loyalsoldier/geoip（gh-proxy）"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:51
+msgid "Loyalsoldier/geoip (CDN)"
+msgstr "Loyalsoldier/geoip（CDN）"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:52
+msgid "MetaCubeX/geoip"
+msgstr "MetaCubeX/geoip"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:53
+msgid "MetaCubeX/geoip (gh-proxy)"
+msgstr "MetaCubeX/geoip（gh-proxy）"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:54
+msgid "MetaCubeX/geoip (CDN)"
+msgstr "MetaCubeX/geoip（CDN）"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:57
+msgid "Geosite Update URL"
+msgstr "Geosite 更新 URL"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:58
+msgid "Loyalsoldier/geosite"
+msgstr "Loyalsoldier/geosite"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:59
+msgid "Loyalsoldier/geosite (gh-proxy)"
+msgstr "Loyalsoldier/geosite（gh-proxy）"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:60
+msgid "Loyalsoldier/geosite (CDN)"
+msgstr "Loyalsoldier/geosite（CDN）"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:61
+msgid "MetaCubeX/geosite"
+msgstr "MetaCubeX/geosite"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:62
+msgid "MetaCubeX/geosite (gh-proxy)"
+msgstr "MetaCubeX/geosite（gh-proxy）"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:63
+msgid "MetaCubeX/geosite (CDN)"
+msgstr "MetaCubeX/geosite（CDN）"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:66
+msgid "Location of Geo rule files"
+msgstr "Geo 资源文件目录"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:67
+msgid "Directory where geoip.dat and geosite.dat live."
+msgstr "geoip.dat 和 geosite.dat 所在目录。"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:72
+msgid "Auto Update Mode"
+msgstr "自动更新模式"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:75
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:50
 msgid "Disable"
-msgstr "停用"
+msgstr "禁用"
 
-msgid "Game Mode UDP Server"
-msgstr "游戏模式UDP中继服务器"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:76
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:51
+msgid "Loop Mode"
+msgstr "循环"
 
-msgid "Same as Global Server"
-msgstr "与全局服务器相同"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:77
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:52
+msgid "Every day"
+msgstr "每天"
 
-msgid "Netflix Server"
-msgstr "Netflix 分流服务器"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:78
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:53
+msgid "Every Monday"
+msgstr "每周一"
 
-msgid "External Proxy Mode"
-msgstr "分流服务器（前置）代理"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:79
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:54
+msgid "Every Tuesday"
+msgstr "每周二"
 
-msgid "Forward Netflix Proxy through Main Proxy"
-msgstr "分流服务器流量通过主服务节点中转代理转发"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:80
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:55
+msgid "Every Wednesday"
+msgstr "每周三"
 
-msgid "Multi Threads Option"
-msgstr "多线程并发转发"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:81
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:56
+msgid "Every Thursday"
+msgstr "每周四"
 
-msgid "Auto Threads"
-msgstr "自动（CPU线程数）"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:82
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:57
+msgid "Every Friday"
+msgstr "每周五"
 
-msgid "1 Thread"
-msgstr "单线程"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:83
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:58
+msgid "Every Saturday"
+msgstr "每周六"
 
-msgid "2 Threads"
-msgstr "2 线程"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:84
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:59
+msgid "Every Sunday"
+msgstr "每周日"
 
-msgid "4 Threads"
-msgstr "4 线程"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:85
+msgid "Update Time"
+msgstr "更新时间"
 
-msgid "8 Threads"
-msgstr "8 线程"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:103
+msgid "Update Interval(hour)"
+msgstr "更新间隔(小时)"
 
-msgid "16 Threads"
-msgstr "16 线程"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:104
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:81
+msgid "hour"
+msgstr "小时"
 
-msgid "32 Threads"
-msgstr "32 线程"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:110
+#, javascript-format
+msgid "geoip.dat: %s · %s"
+msgstr "geoip.dat：%s · %s"
 
-msgid "64 Threads"
-msgstr "64 线程"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:114
+#, javascript-format
+msgid "geosite.dat: %s · %s"
+msgstr "geosite.dat：%s · %s"
 
-msgid "128 Threads"
-msgstr "128 线程"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:125
+msgid "Updating…"
+msgstr "更新中…"
 
-msgid "Running Mode"
-msgstr "运行模式"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:128
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:133
+msgid "Manually update"
+msgstr "手动更新"
 
-msgid "GFW List Mode"
-msgstr "GFW列表模式"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js
+msgid "Update failed; check Runtime Logs for details."
+msgstr "更新失败；请查看运行日志了解详情。"
 
-msgid "Smart Mode"
-msgstr "智能模式（基于ChinaDNS-NG）"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js
+msgid "Update GeoIP and Geosite using the saved URLs. Save & Apply URL changes first."
+msgstr "使用已保存的 URL 更新 GeoIP 和 Geosite。修改 URL 后请先保存并应用。"
 
-msgid "Global Mode"
-msgstr "全局模式"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js
+msgid "Save & Apply changes before updating rules."
+msgstr "更新规则前，请先保存并应用修改。"
 
-msgid "Oversea Mode"
-msgstr "海外用户回国模式"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js
+msgid "Unable to call the rule updater."
+msgstr "无法调用规则更新程序。"
 
-msgid "Proxy Ports"
-msgstr "需要代理的端口"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js
+msgid "Invalid update response."
+msgstr "更新程序返回了无效响应。"
 
-msgid "Load GFW List"
-msgstr "加载GFW列表"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js
+#, javascript-format
+msgid "Unable to query update status: %s"
+msgstr "无法查询更新状态：%s"
 
-msgid "If the domestic DNS does not hijack foreign domain name to domestic IP, No need to be enabled"
-msgstr "如果国内DNS未劫持国外域名返回国内的IP，不需要启用"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js
+msgid "Another rule update is already running. Try again later."
+msgstr "另一项规则更新正在运行，请稍后重试。"
 
-msgid "Preload IP"
-msgstr "预加载IP"
+#: root/usr/share/bypass/api.sh
+msgid "Rule updater is unavailable."
+msgstr "规则更新程序不可用。"
 
-msgid "Preload Google and Telegram IP segments (GFW mode only)"
-msgstr "预加载谷歌与Telegram IP段(仅GFW模式生效)"
+#: root/usr/share/bypass/api.sh
+msgid "Unable to create the update job."
+msgstr "无法创建规则更新任务。"
 
-msgid "All Ports"
-msgstr "所有端口（默认）"
+#: root/usr/share/bypass/api.sh
+msgid "Invalid update job."
+msgstr "无效的规则更新任务。"
 
-msgid "Only Common Ports"
-msgstr "仅常用端口（不走P2P流量到代理）"
+#: root/usr/share/bypass/api.sh
+msgid "The update was interrupted or its result is unavailable."
+msgstr "更新已中断，或无法获取更新结果。"
 
-msgid "Foreign Resolve Dns Mode"
-msgstr "国外DNS解析方式"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:129
+msgid "Done"
+msgstr "完成"
 
-msgid "Use SmartDNS DoH query"
-msgstr "使用SmartDNS DoH查询"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:129
+msgid "Update failed"
+msgstr "更新失败"
 
-msgid "Use SmartDNS TCP query"
-msgstr "使用SmartDNS TCP查询"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:136
+msgid "Rule files"
+msgstr "规则文件"
 
-msgid "Foreign DoH"
-msgstr "国外DoH"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:142
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:190
+msgid "Shunt Rule"
+msgstr "分流规则"
 
-msgid "Custom DNS format is https://cloudflare-dns.com/dns-query or https://104.16.249.249/dns-query -http-host cloudflare-dns.com"
-msgstr "自定义DNS格式为 https://cloudflare-dns.com/dns-query 或 https://104.16.249.249/dns-query -http-host cloudflare-dns.com"
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:143
+msgid "Note the priority: the higher the order, the higher the priority."
+msgstr "请注意优先级：顺序越靠上，优先级越高。"
 
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:164
+#, javascript-format
+msgid "Delete rule: %s ?"
+msgstr "删除规则：%s？"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:175
+msgid "Summary"
+msgstr "摘要"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:180
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:360
+msgid "Direct"
+msgstr "直连"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:180
+msgid "Block"
+msgstr "阻断"
+
+#: htdocs/luci-static/resources/view/bypass/rule_manage.js:183
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:177
+msgid "Egress"
+msgstr "出口"
+
+#: htdocs/luci-static/resources/view/bypass/log.js:55
+msgid "Clear logs"
+msgstr "清空日志"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:9
+msgid "Use comma-separated ports or ranges, for example 80,443,1000:2000."
+msgstr "请使用逗号分隔端口或端口范围，例如 80,443,1000:2000。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:15
+msgid "Ports must be between 1 and 65535 and ranges must be ascending."
+msgstr "端口必须介于 1 到 65535，且范围的起始端口不能大于结束端口。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:37
+msgid "Delay Settings"
+msgstr "定时配置"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:41
+msgid "Open and close Daemon"
+msgstr "启动守护进程"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:40
+msgid "Delay Start"
+msgstr "开机时延时启动"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:40
+msgid "Units: seconds."
+msgstr "单位：秒。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:49
+msgid "automatically mode"
+msgstr "自动执行模式"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:62
+msgid "Time"
+msgstr "时间"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:80
+msgid "Interval(Hour)"
+msgstr "间隔（小时）"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:87
+msgid "Forwarding Settings"
+msgstr "转发配置"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:90
+msgid "TCP No Redir Ports"
+msgstr "TCP不转发端口"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js
+msgid "UDP No Redir Ports"
+msgstr "UDP不转发端口"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js
+msgid "NaiveProxy cannot proxy UDP. These destination ports bypass strict UDP blocking and go Direct, which may expose the real egress IP. With no patterns configured, external forwarded UDP is blocked by default; redirected DNS and local network traffic remain available."
+msgstr "NaiveProxy 无法代理 UDP。这些目的端口会绕过严格的 UDP 阻断并直连，可能暴露真实出口 IP。未配置任何端口时，默认阻断外部转发 UDP；重定向的 DNS 和本地网络流量不受影响。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:92
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:97
+msgid "No patterns are used"
+msgstr "不使用"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:93
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:99
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:103
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:109
+msgid "All"
+msgstr "所有"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:101
+msgid "TCP Redir Ports"
+msgstr "TCP转发端口"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:104
+msgid "Common Use"
+msgstr "常用的"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:105
+msgid "Only Web"
+msgstr "仅网页"
+
+
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:116
+msgid "The port settings support single ports and ranges."
+msgstr "端口设置支持单个端口和端口范围。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:117
+msgid "Separate multiple ports with commas (,)."
+msgstr "多个端口请使用英文逗号（,）分隔。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:118
+msgid "Example: 21,80,443,1000:2000."
+msgstr "示例：21,80,443,1000:2000。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:122
+msgid "TCP Proxy way"
+msgstr "TCP 代理方式"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:123
+msgid "REDIRECT"
+msgstr "REDIRECT"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:124
+msgid "TPROXY"
+msgstr "TPROXY"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:126
+msgid "IPv6 TProxy"
+msgstr "IPv6 TProxy"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:127
+msgid "Experimental feature. Make sure that your node supports IPv6. When disabled, IPv6 TCP that would otherwise be transparently proxied is blocked instead of leaking through the real egress."
+msgstr "实验性功能，请确保节点支持 IPv6。关闭时，原本需要透明代理的 IPv6 TCP 会被阻止，不再从真实出口泄漏。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js:131
+msgid "Direct IP List"
+msgstr "直连 IP 列表"
+
+msgid "These IP addresses and CIDR ranges connect directly without entering BypassCore. One entry per line; geoip:CODE and comments beginning with # are also supported."
+msgstr "这些 IP 地址和 CIDR 网段将直接连接，不进入 BypassCore。每行一项；同时支持 geoip:代码 和以 # 开头的注释。"
+
+msgid "Invalid Direct IP entry: %s"
+msgstr "无效的直连 IP 条目：%s"
+
+msgid "Operation failed."
+msgstr "操作失败。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:102
+msgid "Check…"
+msgstr "检测中…"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:114
+msgid "Working…"
+msgstr "连接正常…"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:117
+msgid "Problem detected!"
+msgstr "连接失败"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:151
+msgid "Core"
+msgstr "核心"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:151
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:164
+msgid "RUNNING"
+msgstr "运行中"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:151
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:164
+msgid "NOT RUNNING"
+msgstr "未运行"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:153
+msgid "Baidu"
+msgstr "百度"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:153
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:154
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:155
+msgid "Touch Check"
+msgstr "点我检测"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:154
 msgid "Google"
-msgstr "谷歌"
+msgstr "Google"
 
-msgid "Do not use the same DNS server as the global server"
-msgstr "不要使用与全局服务器相同的DNS"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:155
+msgid "GitHub"
+msgstr "GitHub"
 
-msgid "Foreign DNS"
-msgstr "国外DNS"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:170
+msgid "Version"
+msgstr "版本"
 
-msgid "Custom DNS format is 1.1.1.1:53,1.0.0.1 ,Port optional"
-msgstr "自定义DNS格式为 1.1.1.1:53,1.0.0.1 ,端口号可选"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:171
+msgid "naive"
+msgstr "naive"
 
-msgid "Domestic Resolve Dns Mode"
-msgstr "国内DNS解析方式"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:171
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:172
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:173
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:174
+msgid "present"
+msgstr "已安装"
 
-msgid "Use SmartDNS UDP query"
-msgstr "使用SmartDNS UDP查询"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:171
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:172
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:174
+msgid "missing"
+msgstr "缺失"
 
-msgid "If DoH resolution is not normal,use UDP mode and select ISP DNS"
-msgstr "如果DoH解析不正常则使用UDP模式并选择ISP的DNS"
+msgid "ready"
+msgstr "就绪"
 
-msgid "Domestic DoH"
-msgstr "国内DoH"
+msgid "stopped"
+msgstr "已停止"
 
-msgid "Custom DNS format is https://dns.alidns.com/dns-query or https://223.5.5.5/dns-query"
-msgstr "自定义DNS格式为 https://dns.alidns.com/dns-query 或 https://223.5.5.5/dns-query"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:173
+msgid "optional"
+msgstr "可选"
 
-msgid "Ali"
-msgstr "阿里"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:174
+msgid "bypasscore"
+msgstr "bypasscore"
 
-msgid "ISP DNS"
-msgstr "运营商DNS"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:175
+msgid "bypasscore ELF"
+msgstr "bypasscore ELF"
 
-msgid "Use ISP DNS to resolve DoH domain"
-msgstr "使用运营商DNS解析DoH域名"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:175
+msgid "Linux ELF"
+msgstr "Linux ELF"
 
-msgid "Domestic DNS"
-msgstr "国内DNS"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:175
+msgid "not Linux ELF"
+msgstr "非 Linux ELF"
 
-msgid "Custom DNS format is 223.5.5.5:53,223.6.6.6 ,Port optional"
-msgstr "自定义DNS格式为 223.5.5.5:53,223.6.6.6 ,端口号可选"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:176
+msgid "Firewall"
+msgstr "防火墙"
 
-msgid "Severs Nodes"
-msgstr "服务器节点"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:177
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:302
+msgid "default"
+msgstr "默认"
 
-msgid "Servers subscription and manage"
-msgstr "服务器节点订阅与管理"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:189
+msgid "Main"
+msgstr "主要"
 
-msgid "Auto Update"
-msgstr "自动更新"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:191
+msgid "DNS"
+msgstr "DNS"
 
-msgid "Auto Update Server subscription,GFW list and CHN route"
-msgstr "自动更新服务器订阅、GFW列表和 CHN路由表"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:192
+msgid "Log"
+msgstr "日志"
 
-msgid "Update time (every day)"
-msgstr "更新时间 (每天)"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:193
+msgid "Maintain"
+msgstr "维护"
 
-msgid "Subscribe URL"
-msgstr "SS/SSR/V2/TROJAN订阅URL"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:196
+msgid "Main switch"
+msgstr "主开关"
 
-msgid "Subscribe Filter Words"
-msgstr "订阅节点关键字过滤"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:200
+msgid "Client Proxy"
+msgstr "客户端代理"
 
-msgid "Subscribe Save Words"
-msgstr "订阅节点关键字保留检查"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:204
+msgid "Naive SOCKS Base Port"
+msgstr "Naive SOCKS 起始端口"
 
-msgid "Filter Words splited by /"
-msgstr "命中关键字的节点将被丢弃。多个关键字用 / 分隔"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:205
+msgid ""
+"Each NaiveProxy node selected by a shunt rule receives a separate local "
+"SOCKS port starting here."
+msgstr ""
+"每个被分流规则选中的 NaiveProxy 节点都会获得一个独立的本地 SOCKS 端口，端口从"
+"此处开始分配。"
 
-msgid "Save Words splited by /"
-msgstr "命中关键字的节点将被保留。多个关键字用 / 分隔。此项为空则不启用保留匹配"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:215
+msgid "BypassCore binary"
+msgstr "BypassCore 二进制"
 
-msgid "Update Subscribe List"
-msgstr "更新订阅URL列表"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:217
+msgid "naive binary"
+msgstr "naive 二进制"
 
-msgid "Update subscribe url list first"
-msgstr "修改订阅URL和节点关键字后，请先点击更新"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:225
+msgid "Egress route table"
+msgstr "出口路由表"
 
-msgid "Subscribe Default Auto-Switch"
-msgstr "订阅新节点故障转移设置"
+msgid ""
+"Base policy route table number. Each selected NaiveProxy node with an egress "
+"interface uses this value plus its node index."
+msgstr ""
+"策略路由表的起始编号。每个已选择且配置了出口接口的 NaiveProxy 节点使用该值加"
+"上其节点序号。"
 
-msgid "Subscribe new add server default Auto-Switch on"
-msgstr "订阅加入的新节点默认开启故障转移"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:228
+msgid "Egress rule priority"
+msgstr "出口规则优先级"
 
-msgid "Through proxy update"
-msgstr "通过代理更新"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:229
+msgid ""
+"Base priority of the per-node destination policy rules. The default 900 runs "
+"before Passwall2/mwan3-style marked rules without modifying their packet "
+"marks."
+msgstr ""
+"节点目标策略规则的起始优先级。默认值 900 会先于 Passwall2/mwan3 风格的标记规"
+"则执行，且不会修改其数据包标记。"
 
-msgid "Through proxy update list,Not Recommended"
-msgstr "通过路由器自身代理更新订阅"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:234
+msgid "Start Delay (seconds)"
+msgstr "启动延迟（秒）"
 
-msgid "Update All Subscribe Severs"
-msgstr "更新所有订阅服务器节点"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:235
+msgid ""
+"Delay before Bypass starts on boot (lets WAN/DNS settle). 0 = start "
+"immediately."
+msgstr "开机时延迟启动 Bypass，让 WAN/DNS 先就绪；0 表示立即启动。"
 
-msgid "Delete All Subscribe Severs"
-msgstr "删除所有订阅服务器节点"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:242
+msgid "Domain Strategy"
+msgstr "域名解析策略"
 
-msgid "Server Count"
-msgstr "服务器节点数量"
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:243
+msgid ""
+"AsIs = no DNS resolution. IpIfNonMatch = resolve on domain mismatch. "
+"IpOnDemand = resolve when a rule needs an IP."
+msgstr ""
+"AsIs = 不解析 DNS；IpIfNonMatch = 域名未命中时解析；IpOnDemand = 规则需要 IP "
+"时解析。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:250
+msgid "Domain matcher"
+msgstr "域名匹配器"
+
+msgid "BypassCore 1.0.5 uses its optimized Linux domain matcher. Hybrid is the only compatible value; Xray's linear matcher does not exist in BypassCore."
+msgstr "BypassCore 1.0.5 使用其针对 Linux 优化的域名匹配器。Hybrid 是唯一兼容值；BypassCore 中不存在 Xray 的 linear 匹配器。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:251
+msgid "hybrid"
+msgstr "混合"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:256
+msgid "Direct DNS result write to NFTSet"
+msgstr "直连 DNS 结果写入 NFTSet"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:257
+msgid ""
+"Write addresses resolved for matching direct-domain rules to an informational "
+"NFTSet. BypassCore still makes every ordered traffic decision because "
+"unrelated hostnames can share an IP address."
+msgstr ""
+"将命中直连域名规则所解析出的地址写入信息用途的 NFTSet。由于不同域名可能共享同"
+"一个 IP 地址，所有有序流量决策仍由 BypassCore 完成。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:262
+msgid "Enable GeoIP Data Parsing"
+msgstr "启用 GeoIP 数据解析"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:263
+msgid ""
+"Parse Direct-rule GeoIP entries into an informational NFTSet for diagnostics "
+"and compatibility. BypassCore always remains responsible for ordered routing "
+"decisions."
+msgstr ""
+"将直连规则中的 GeoIP 条目解析到信息用途的 NFTSet，供诊断和兼容使用；有序路由决"
+"策始终由 BypassCore 负责。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:268
+msgid "Default Direct Interface"
+msgstr "默认直连接口"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js
+msgid "Default Naive Interface"
+msgstr "默认 Naive 接口"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js
+msgid "Use this OpenWrt network for NaiveProxy nodes whose Egress Interface is set to use the default Naive interface. Empty = system default route."
+msgstr "将此 OpenWrt 网络用于出口接口设为继承默认 Naive 接口的 NaiveProxy 节点；留空则使用系统默认路由。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:269
+msgid ""
+"Bind BypassCore direct traffic to this OpenWrt network. The current runtime "
+"L3 device is resolved through netifd. Empty = system default route."
+msgstr ""
+"将 BypassCore 直连流量绑定到此 OpenWrt 网络。程序通过 netifd 解析当前 L3 设"
+"备；留空则使用系统默认路由。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:270
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:276
+msgid "(system default route)"
+msgstr "（系统默认路由）"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:283
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:289
+msgid "Rule"
+msgstr "规则"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js
+msgid "Name"
+msgstr "名称"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:292
+msgid "Default"
+msgstr "默认"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js
+msgid "Default Node"
+msgstr "默认节点"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:297
+msgid "Close (Not use)"
+msgstr "关闭（不使用）"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:298
+msgid "Direct Connection"
+msgstr "直连"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:299
+msgid "Blackhole (Block)"
+msgstr "黑洞（阻止）"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:305
+msgid "Egress Interface"
+msgstr "出口接口"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:306
+msgid "(use default direct interface)"
+msgstr "（使用默认直连接口）"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js
+msgid "(use default naive interface)"
+msgstr "（使用默认 Naive 接口）"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js
+msgid "Send this NaiveProxy node's server connection through the selected OpenWrt network. The first option inherits Default Naive Interface."
+msgstr "通过所选 OpenWrt 网络连接此 NaiveProxy 节点服务器；第一个选项继承默认 Naive 接口。"
+
+msgid "system default"
+msgstr "系统默认"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:312
+msgid "Direct domain DNS routing"
+msgstr "直连域名 DNS 分流"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:316
+msgid ""
+"One entry per line: a domain/full/geosite rule followed by a UDP, TCP or TLS "
+"direct DNS upstream. BypassCore applies these entries before the default "
+"domestic/remote DNS servers. Invalid entries prevent the service from starting."
+msgstr ""
+"每行一项：domain/full/geosite 规则，后跟 UDP、TCP 或 TLS 直连 DNS 上游。"
+"BypassCore 会在默认国内/国外 DNS 服务器之前应用这些条目。格式错误会阻止服务启动。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:319
+msgid "Direct Query Strategy"
+msgstr "直连查询策略"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:326
+msgid "Remote DNS Protocol"
+msgstr "国外 DNS 协议"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:327
+msgid ""
+"BypassCore carries TCP, TLS (DoT), and DoH through the selected NaiveProxy "
+"node. UDP requires Direct outbound because NaiveProxy has no UDP transport."
+msgstr ""
+"BypassCore 可通过所选 NaiveProxy 节点承载 TCP、TLS（DoT）和 DoH。由于 "
+"NaiveProxy 不支持 UDP，UDP 必须选择直连出站。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:328
+msgid "UDP"
+msgstr "UDP"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:329
+msgid "TCP"
+msgstr "TCP"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:330
+msgid "DoH"
+msgstr "DoH"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:331
+msgid "TLS (DoT)"
+msgstr "TLS (DoT)"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:335
+msgid "Remote DNS"
+msgstr "国外 DNS"
+
+msgid "Leave empty to derive the resolver from the Default WireGuard node's Local DNS; otherwise 1.1.1.1 is used. Note that public resolvers queried through a domestic tunnel egress are blocked or poisoned."
+msgstr "留空时自动使用 Default WireGuard 节点的本地 DNS；否则回退为 1.1.1.1。注意：经国内出口的隧道查询公共 DNS 会被封锁或污染。"
+
+msgid "(auto: follow Default WireGuard node's Local DNS)"
+msgstr "（自动：跟随 Default WireGuard 节点的本地 DNS）"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:345
+msgid "Remote DNS DoH"
+msgstr "国外 DNS DoH"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:353
+msgid "Remote DNS EDNS Client Subnet"
+msgstr "国外 DNS EDNS 客户端子网"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:354
+msgid ""
+"Tell the DNS server the client location. This must be a public IP and the "
+"server must support EDNS Client Subnet (RFC 7871)."
+msgstr ""
+"向 DNS 服务器告知客户端所在位置。该值必须是公网 IP，且服务器必须支持 EDNS 客"
+"户端子网（RFC 7871）。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:358
+msgid "Remote DNS Outbound"
+msgstr "国外 DNS 出站"
+
+msgid ""
+"Remote carries TCP, TLS (DoT), or DoH through BypassCore and the selected "
+"NaiveProxy node. Direct connects from the router without the proxy."
+msgstr "远程会通过 BypassCore 和所选 NaiveProxy 节点承载 TCP、TLS（DoT）或 DoH；直连则由路由器直接连接而不经过代理。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:359
+msgid "Remote"
+msgstr "远程"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:364
+msgid "Remote Query Strategy"
+msgstr "国外查询策略"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:371
+msgid "Domain Override"
+msgstr "域名覆盖"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:375
+msgid "One entry per line: a domain followed by an IPv4 or IPv6 address."
+msgstr "每行一项：域名后跟 IPv4 或 IPv6 地址。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:378
+msgid "DNS Redirect"
+msgstr "DNS 重定向"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:379
+msgid ""
+"Forward dnsmasq to BypassCore DNS and redirect LAN client TCP/UDP port 53 "
+"queries to the router, including clients with a hardcoded DNS server. "
+"BypassCore applies domain DNS policies and writes DNS results to NFTSets "
+"natively."
+msgstr ""
+"将 dnsmasq 转发到 BypassCore DNS，并把 LAN 客户端的 TCP/UDP 53 端口查询重定向到"
+"路由器，包括硬编码了 DNS 服务器的客户端。BypassCore 会原生应用域名 DNS 策略并将"
+"解析结果写入 NFTSet。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:382
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:384
+msgid "Clear NFTSet"
+msgstr "清空 NFTSet"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:383
+msgid "Try this if a shunt-rule change does not take effect."
+msgstr "如果修改分流规则后未生效，请尝试此功能。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:388
+msgid "NFTSet cleared."
+msgstr "NFTSet 已清空。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:388
+msgid "Clear failed"
+msgstr "清空失败"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:393
+msgid "Enable Node Log"
+msgstr "启用节点日志"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:396
+msgid "Log Level"
+msgstr "日志级别"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:397
+msgid "Debug"
+msgstr "调试"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:398
+msgid "Info"
+msgstr "信息"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:399
+msgid "Warning"
+msgstr "警告"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:400
+msgid "Error"
+msgstr "错误"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:405
+msgid ""
+"Note: Restoring configurations across different versions may cause "
+"compatibility issues."
+msgstr "注意：不同版本间的配置恢复可能会导致兼容性问题。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:411
+msgid "Backing up…"
+msgstr "正在备份…"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:414
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:429
+msgid "DL Backup"
+msgstr "下载备份"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:425
+msgid "Backup failed: "
+msgstr "备份失败："
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:425
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:449
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:50
+msgid "unknown"
+msgstr "未知"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:437
+msgid "Choose a .tar.gz file first."
+msgstr "请先选择 .tar.gz 文件。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:439
+msgid "Restoring…"
+msgstr "正在恢复…"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:445
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:455
+msgid "RST Backup"
+msgstr "恢复备份"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:447
+msgid "Restored. Restart Bypass to apply."
+msgstr "恢复完成，请重启 Bypass 使配置生效。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:449
+msgid "Restore failed: "
+msgstr "恢复失败："
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:461
+msgid "Restore to default configuration? This deletes your current config."
+msgstr "恢复默认配置？这会删除当前配置。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:462
+msgid "Are you sure? This cannot be undone."
+msgstr "确定继续吗？此操作无法撤销。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:464
+msgid "Resetting…"
+msgstr "正在重置…"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:469
+msgid "Do Reset"
+msgstr "执行重置"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:475
+msgid "Backup and Restore"
+msgstr "备份还原"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:476
+msgid "Backup or Restore Client Configurations."
+msgstr "备份或恢复客户端配置。"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:479
+msgid "Create Backup File"
+msgstr "创建备份文件"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:483
+msgid "Restore Backup File"
+msgstr "恢复备份文件"
+
+#: htdocs/luci-static/resources/view/bypass/basic_settings.js:487
+msgid "Restore to default configuration"
+msgstr "恢复默认配置"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:23
+msgid "Redirecting to Rule Manage…"
+msgstr "正在返回规则管理…"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:27
+#, javascript-format
+msgid "Edit Shunt Rule: %s"
+msgstr "编辑分流规则：%s"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:37
+msgid "Network"
+msgstr "网络"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:69
+msgid "Domain and IP / CIDR lists are independent. If both are non-empty, BypassCore creates two ordered rules with the same outbound."
+msgstr "域名列表与 IP / CIDR 列表彼此独立；两者都不为空时，BypassCore 会使用相同的出口创建两条有序规则。"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:101
+msgid "Domain list"
+msgstr "域名列表"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:105
+msgid ""
+"One rule per line. v2ray prefixes: geosite:, domain:, full:, regexp:, ext:, "
+"or a bare domain."
+msgstr ""
+"每行一条规则，可使用 geosite:、domain:、full:、regexp:、ext: 前缀或直接填写域"
+"名。"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:107
+msgid "IP / CIDR list"
+msgstr "IP / CIDR 列表"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:111
+msgid "One rule per line. geoip:, ext:, or a bare CIDR / IP."
+msgstr "每行一条规则，可使用 geoip:、ext: 或直接填写 CIDR / IP。"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:29
+msgid "Results appear here."
+msgstr "结果将显示在此。"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:35
+msgid "Please enter query content!"
+msgstr "请输入查询内容！"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:41
+msgid "Querying…"
+msgstr "查询中…"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:48
+msgid "No results were found!"
+msgstr "未找到结果！"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:50
+msgid "Error: "
+msgstr "错误："
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:65
+msgid "Enter a domain or IP"
+msgstr "请输入域名或 IP"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:71
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:85
+msgid "Query"
+msgstr "查询"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:92
+msgid "Tips:"
+msgstr "提示："
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:93
+msgid ""
+"By entering a domain or IP, you can query the Geo rule list they belong to."
+msgstr "输入域名或 IP，可查询其所属的 Geo 规则列表。"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:94
+msgid ""
+"By entering a GeoIP or Geosite, you can extract the domains/IPs they contain."
+msgstr "输入 GeoIP 或 Geosite，可提取其包含的域名/IP。"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:95
+msgid ""
+"Use the GeoIP/Geosite query function to verify if the entered Geo rules are "
+"correct."
+msgstr "使用 GeoIP/Geosite 查询功能验证输入的 Geo 规则是否正确。"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:100
+msgid "Domain/IP Query"
+msgstr "域名/IP 查询"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:103
+msgid "Enter a domain or IP to query the Geo rule list they belong to."
+msgstr "输入域名或 IP，查询其所属的 Geo 规则列表。"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:108
+msgid "GeoIP/Geosite Query"
+msgstr "GeoIP/Geosite 查询"
+
+#: htdocs/luci-static/resources/view/bypass/geo_view.js:111
+msgid ""
+"Enter a GeoIP or Geosite to extract the domains/IPs they contain. Format: "
+"geoip:cn or geosite:gfw"
+msgstr ""
+"输入 GeoIP/Geosite，提取它们所包含的域名/IP。格式：geoip:cn 或 geosite:gfw"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:53
+msgid "NaiveProxy nodes (HTTPS/QUIC)."
+msgstr "NaiveProxy 节点（HTTPS/QUIC）。"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:60
+msgid "TCP Connect"
+msgstr "TCP 连接"
+
+msgid "Connect Test"
+msgstr "连接测试"
+
+msgid "TCP Test"
+msgstr "TCP 测试"
+
+msgid "UDP Test"
+msgstr "UDP 测试"
+
+msgid "Connect test failed."
+msgstr "连接测试失败。"
+
+msgid "UDP Test verifies the peer handshake; URL Test also verifies tunneled DNS and TCP traffic."
+msgstr "UDP 测试验证对端握手；URL 测试还会验证隧道内 DNS 和 TCP 流量。"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:61
+msgid "Actions"
+msgstr "操作"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:68
+msgid "No nodes yet. Add one below."
+msgstr "暂无节点，请在下方添加。"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:80
+msgid "Testing…"
+msgstr "测试中…"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:93
+msgid "Test"
+msgstr "测试"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:114
+msgid "Edit"
+msgstr "编辑"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:119
+msgid "Copy"
+msgstr "复制"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:124
+#: htdocs/luci-static/resources/view/bypass/node_list.js:190
+msgid "Delete"
+msgstr "删除"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:148
+msgid "New Node"
+msgstr "新节点"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:155
+msgid "Add"
+msgstr "添加"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:167
+msgid "(copy)"
+msgstr "（副本）"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:176
+#, javascript-format
+msgid "Delete node: %s ?"
+msgstr "删除节点：%s？"
+
+#: htdocs/luci-static/resources/view/bypass/node_list.js:196
+msgid "Cancel"
+msgstr "取消"
+
+#: htdocs/luci-static/resources/view/bypass/file_location.js:10
+#: htdocs/luci-static/resources/view/bypass/file_location.js:11
+msgid "Core Binaries"
+msgstr "核心二进制"
+
+#: htdocs/luci-static/resources/view/bypass/file_location.js:26
+msgid "Geo Rule Files"
+msgstr "Geo 资源文件"
+
+#: root/usr/share/luci/menu.d/luci-app-bypass.json
+msgid "File Location"
+msgstr "文件位置"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:40
+msgid "Protocol"
+msgstr "协议"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js
+msgid "Inbound Tag"
+msgstr "入站标签"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js
+msgid "Transparent proxy"
+msgstr "透明代理"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js
+msgid "Source"
+msgstr "来源"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js
+msgid "Use comma-separated ports or ranges, for example 80,443,1000-2000."
+msgstr "请使用逗号分隔端口或端口范围，例如 80,443,1000-2000。"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js
+msgid "Enter an IPv4/IPv6 address, CIDR, or geoip: rule."
+msgstr "请输入 IPv4/IPv6 地址、CIDR 或 geoip: 规则。"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js
+msgid "BypassCore currently identifies HTTP and TLS traffic through transparent-inbound sniffing."
+msgstr "BypassCore 当前通过透明入站嗅探识别 HTTP 和 TLS 流量。"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js
+msgid "Restrict this rule to traffic entering through the BypassCore transparent inbound."
+msgstr "将此规则限制为从 BypassCore 透明入站进入的流量。"
+
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js
+msgid "Source IPv4/IPv6 address, CIDR, or geoip: rule, for example 192.168.1.0/24 or geoip:private."
+msgstr "来源 IPv4/IPv6 地址、CIDR 或 geoip: 规则，例如 192.168.1.0/24 或 geoip:private。"
+
+#: htdocs/luci-static/resources/view/bypass/other_settings.js
+msgid "Hijacking ICMP (PING)"
+msgstr "劫持 ICMP（PING）"
+
+msgid ""
+"Send this NaiveProxy node's server connection through the selected OpenWrt "
+"network. Empty = system default route."
+msgstr ""
+"让此 NaiveProxy 节点的服务器连接从所选 OpenWrt 网络发出；留空则使用系统默认路"
+"由。"
+
+#: htdocs/luci-static/resources/view/bypass/node_config.js:68
+#: htdocs/luci-static/resources/view/bypass/rule_edit.js:63
+msgid "Back"
+msgstr "返回"
 
 msgid "Type"
 msgstr "类型"
 
-msgid "Alias"
-msgstr "别名"
+msgid "NaiveProxy and WireGuard outbound nodes."
+msgstr "NaiveProxy 与 WireGuard 出站节点。"
 
-msgid "None"
-msgstr "无"
+msgid "WireGuard tests use the running BypassCore outbound, so the node must be selected by an active rule."
+msgstr "WireGuard 测试使用运行中的 BypassCore 出站，因此该节点必须被已生效的规则选中。"
 
-msgid "Server Port"
-msgstr "端口"
+msgid "not required"
+msgstr "无需安装"
 
-msgid "Socket Connected"
-msgstr "连接测试"
+msgid "Endpoint Public Key"
+msgstr "服务端公钥"
 
-msgid "TCPing Latency"
-msgstr "TCPing延迟"
+msgid "Endpoint Address"
+msgstr "服务端地址"
 
-msgid "connecting"
-msgstr "连接中"
+msgid "Endpoint Port"
+msgstr "服务端端口"
 
-msgid "ok"
-msgstr "成功"
+msgid "Local Private Key"
+msgstr "本地私钥"
 
-msgid "fail"
-msgstr "失败"
+msgid "Local Public Key"
+msgstr "本地公钥"
 
-msgid "Apply"
-msgstr "使用"
+msgid "Generate Key Pair"
+msgstr "生成密钥对"
 
-msgid "Auto Switch"
-msgstr "故障转移"
+msgid "Generate"
+msgstr "一键生成"
 
-msgid "Edit Server"
-msgstr "编辑服务器配置"
+msgid "Generate a new local private key and derive its public key."
+msgstr "生成新的本地私钥，并自动推导对应的公钥。"
 
-msgid "Paste ssr url here"
-msgstr "在此处粘贴ssr://网址"
+msgid "Automatically filled when a local key pair is generated."
+msgstr "生成本地密钥对时自动填写。"
 
-msgid "Unable to copy SSR to clipboard."
-msgstr "无法复制SSR网址到剪贴板。"
+msgid "Send this WireGuard endpoint connection through the selected OpenWrt network."
+msgstr "让此 WireGuard 端点连接从所选 OpenWrt 网络发出。"
 
-msgid "Copy SSR to clipboard successfully."
-msgstr "成功复制SSR网址到剪贴板。"
+msgid "TCP connect probe failed."
+msgstr "TCP 连接测试失败。"
 
-msgid "Server Node Type"
-msgstr "服务器节点类型"
+msgid "URL test failed."
+msgstr "URL 测试失败。"
 
-msgid "Using incorrect encryption mothod may causes service fail to start"
-msgstr "输入不正确的参数组合可能会导致服务无法启动"
+msgid "Local Address"
+msgstr "本地地址"
 
-msgid "Alias(optional)"
-msgstr "别名（可选）"
+msgid "Local tunnel addresses. If omitted, BypassCore uses compatibility addresses; normally enter the addresses assigned by the provider."
+msgstr "本地隧道地址。留空时 BypassCore 使用兼容地址；通常应填写服务提供方分配的一个或多个地址。"
 
-msgid "Network interface to use"
-msgstr "选择使用的网络接口"
+msgid "Local DNS"
+msgstr "本地 DNS"
 
-msgid "Redirect traffic to this network interface"
-msgstr "分流到这个网络接口"
+msgid "DNS servers used when resolving through this tunnel (URL Test and domain destinations), usually the server-side LAN DNS. Mirrors the DNS field of wg-quick. Requires BypassCore 1.5.0 or later."
+msgstr "经本隧道解析时使用的 DNS 服务器（URL 测试及域名目的地），通常填服务端的局域网 DNS。对应 wg-quick 的 DNS 字段。需要 BypassCore 1.5.0 或更高版本。"
 
-msgid "Server Address"
-msgstr "服务器地址"
+msgid "Reserved"
+msgstr "保留字节（Reserved）"
 
-msgid "Enable Authentication"
-msgstr "启用用户名/密码认证"
+msgid "Three reserved bytes required by WARP-derived providers, as d1,d2,d3 or base64. Vanilla WireGuard servers do not need it. Requires BypassCore 1.5.0 or later."
+msgstr "WARP 类服务商要求的 3 个保留字节，可填 d1,d2,d3 十进制形式或 base64。原生 WireGuard 服务端无需填写。需要 BypassCore 1.5.0 或更高版本。"
 
-msgid "Username"
-msgstr "用户名"
+msgid "Each reserved byte must be between 0 and 255."
+msgstr "每个保留字节必须在 0-255 之间。"
 
-msgid "Password"
-msgstr "密码"
+msgid "Enter three decimal bytes separated by commas, or their base64 form."
+msgstr "请输入以逗号分隔的 3 个十进制字节，或其 base64 形式。"
 
-msgid "Encrypt Method"
-msgstr "加密方式"
+msgid "MTU"
+msgstr "MTU"
 
-msgid "Plugin"
-msgstr "插件"
+msgid "Pre-Shared Key"
+msgstr "预共享密钥"
 
-msgid "Plugin Opts"
-msgstr "插件参数"
+msgid "Generate Pre-Shared Key"
+msgstr "生成预共享密钥"
 
-msgid "Protocol"
-msgstr "传输协议"
+msgid "Persistent Keepalive"
+msgstr "持续保活"
 
-msgid "Protocol param (optional)"
-msgstr "传输协议参数（可选）"
+msgid "Seconds; leave empty or use 0 to disable."
+msgstr "单位为秒；留空或填写 0 表示禁用。"
 
-msgid "Authentication type"
-msgstr "验证类型"
+msgid "Enter a 32-byte WireGuard key in base64 or hexadecimal form."
+msgstr "请输入 base64 或十六进制格式的 32 字节 WireGuard 密钥。"
 
-msgid "Authentication payload"
-msgstr "验证载荷"
+msgid "WireGuard key generation failed."
+msgstr "WireGuard 密钥生成失败。"
 
-msgid "QUIC connection receive window"
-msgstr "QUIC 连接接收窗口"
+msgid "WireGuard preshared key generation failed."
+msgstr "WireGuard 预共享密钥生成失败。"
 
-msgid "QUIC stream receive window"
-msgstr "QUIC 流接收窗口"
+msgid "WireGuard nodes carry UDP, TCP, TLS (DoT), and DoH. NaiveProxy nodes carry TCP, TLS, and DoH; UDP through NaiveProxy is rejected."
+msgstr "WireGuard 节点可承载 UDP、TCP、TLS（DoT）和 DoH；NaiveProxy 节点可承载 TCP、TLS 和 DoH，并拒绝 UDP。"
 
-msgid "Disable Path MTU discovery"
-msgstr "禁用 MTU 探测"
+msgid "Remote uses the selected NaiveProxy or WireGuard node. Direct connects from the router without the proxy."
+msgstr "“远程”使用选中的 NaiveProxy 或 WireGuard 节点；“直连”则由路由器直接连接。"
 
-msgid "Obfs"
-msgstr "混淆插件"
+#~ msgid "\"auto\" = detect ISP DNS from resolv.conf."
+#~ msgstr "“auto”表示从 resolv.conf 自动检测运营商 DNS。"
 
-msgid "Obfs param (optional)"
-msgstr "混淆参数（可选）"
+#~ msgid "(use global default)"
+#~ msgstr "（使用全局默认）"
 
-msgid "VLESS Encryption"
-msgstr "VLESS 加密"
+#~ msgid ""
+#~ "Bind traffic matching this Direct rule to the selected OpenWrt network. "
+#~ "This overrides the default direct interface."
+#~ msgstr "将匹配此直连规则的流量绑定到所选 OpenWrt 网络，并覆盖默认直连接口。"
 
-msgid "Transport"
-msgstr "传输协议"
+#~ msgid "BypassCore domestic DNS"
+#~ msgstr "BypassCore 国内 DNS"
 
-msgid "allowInsecure"
-msgstr "允许不安全连接"
+#~ msgid "BypassCore remote DNS"
+#~ msgstr "BypassCore 远程 DNS"
 
-msgid "If true, allowss insecure connection at TLS client, e.g., TLS server uses unverifiable certificates."
-msgstr "是否允许不安全连接。当选择时，将不会检查远端主机所提供的 TLS 证书的有效性。"
+#~ msgid "Close"
+#~ msgstr "关闭"
 
-msgid "Flow"
-msgstr "流控 (Flow)"
+#~ msgid "Confirm"
+#~ msgstr "确认"
 
-msgid "Concurrency"
-msgstr "最大并发连接数"
+#~ msgid "Default Egress Interface"
+#~ msgstr "默认出口接口"
 
-msgid "Self-signed Certificate"
-msgstr "自签证书"
+#~ msgid "Domestic DNS (china-dns)"
+#~ msgstr "国内 DNS（china-dns）"
 
-msgid "If you have a self-signed certificate,please check the box"
-msgstr "如果你使用自签证书，请选择"
+#~ msgid "Domestic split domain"
+#~ msgstr "国内分流域名"
 
-msgid "upload"
-msgstr "上传证书"
+#~ msgid "IPv4 + IPv6"
+#~ msgstr "IPv4 + IPv6"
 
-msgid "Upload"
-msgstr "上传"
+#~ msgid "IPv4 only"
+#~ msgstr "仅 IPv4"
 
-msgid "Create upload file error"
-msgstr "创建证书文件失败"
+#~ msgid "IPv6 only"
+#~ msgstr "仅 IPv6"
 
-msgid "No specify upload file"
-msgstr "没有上传证书"
+#~ msgid "In use"
+#~ msgstr "使用中"
 
-msgid "Current Certificate Path"
-msgstr "当前证书路径"
+#~ msgid "Node Socks Listen Port"
+#~ msgstr "节点 SOCKS 监听端口"
 
-msgid "Please confirm the current certificate path"
-msgstr "请选择确认所传证书，证书不正确将无法运行"
+#~ msgid "Outbound"
+#~ msgstr "出站"
 
-msgid "TCP Fast Open"
-msgstr "TCP快速打开"
+#~ msgid "Proxy (naive)"
+#~ msgstr "代理（naive）"
 
-msgid "Enable Auto Switch"
-msgstr "启用故障转移"
+#~ msgid "Proxy Egress Interface"
+#~ msgstr "代理出口接口"
 
-msgid "Local Port"
-msgstr "本地端口"
+#~ msgid ""
+#~ "Proxy rules share the selected NaiveProxy node tunnel. Configure its "
+#~ "physical WAN in Node Config; per-rule proxy WAN selection is not possible "
+#~ "with one shared multiplexed Naive tunnel."
+#~ msgstr ""
+#~ "代理规则共用所选 NaiveProxy 节点隧道。请在节点配置中设置其物理 WAN；单条规"
+#~ "则无法在同一个复用 Naive 隧道内选择不同 WAN。"
 
-msgid "KcpTun Enable"
-msgstr "KcpTun 启用"
+#~ msgid "Remote / Foreign DNS (trust-dns)"
+#~ msgstr "国外 DNS（trust-dns）"
 
-msgid "KcpTun Port"
-msgstr "KcpTun 端口"
+#~ msgid ""
+#~ "Steer this NaiveProxy server connection out of the selected OpenWrt "
+#~ "network. Empty = use the global default egress interface."
+#~ msgstr ""
+#~ "让此 NaiveProxy 服务器连接从所选 OpenWrt 网络发出；留空则使用全局默认出口"
+#~ "接口。"
 
-msgid "KcpTun Password"
-msgstr "KcpTun 密码"
+#~ msgid "Upstream for domestic domains in the BypassCore DNS section."
+#~ msgstr "BypassCore DNS 配置中用于国内域名的上游。"
 
-msgid "KcpTun Param"
-msgstr "KcpTun 参数"
+#~ msgid "Use"
+#~ msgstr "使用"
 
-msgid "Access Control"
-msgstr "访问控制"
+#, javascript-format
+#~ msgid "Use node: %s ?"
+#~ msgstr "使用节点：%s？"
 
-msgid "IP Access Control"
-msgstr "IP访问控制"
+#~ msgid "Localhost Proxy"
+#~ msgstr "路由器本机代理"
 
-msgid "WAN IP AC"
-msgstr "WAN IP访问控制"
+#~ msgid "Traffic routing mode"
+#~ msgstr "流量分流模式"
 
-msgid "WAN White List IP"
-msgstr "不走代理的WAN IP"
+#~ msgid "NaiveProxy carrier (Geo DNS split only)"
+#~ msgstr "NaiveProxy 承载（仅 Geo DNS 分流）"
 
-msgid "WAN Force Proxy IP"
-msgstr "强制走代理的WAN IP"
+#~ msgid "BypassCore routing engine"
+#~ msgstr "BypassCore 分流引擎"
 
-msgid "LAN IP AC"
-msgstr "LAN IP访问控制"
+#~ msgid ""
+#~ "Select BypassCore mode when shunt rules, blocking rules, or UDP TPROXY "
+#~ "must be enforced on live traffic. It requires a compatible BypassCore "
+#~ "binary."
+#~ msgstr ""
+#~ "需要让自定义分流规则、阻断规则或 UDP TPROXY 对实时流量生效时，请选择 "
+#~ "BypassCore 模式；该模式需要兼容的 BypassCore 二进制。"
 
-msgid "LAN Access Control"
-msgstr "内网客户端分流代理控制"
+#~ msgid ""
+#~ "Steer the naive → server tunnel out of this interface. Empty = system "
+#~ "default route."
+#~ msgstr "将 naive → 服务器隧道从此接口发出；留空则使用系统默认路由。"
 
-msgid "Allow listed only"
-msgstr "仅允许列表内主机"
+#~ msgid "Egress fwmark"
+#~ msgstr "出口 fwmark"
 
-msgid "Allow all except listed"
-msgstr "除列表外主机皆允许"
+#~ msgid "Enter a decimal or hexadecimal mark, for example 2 or 0x2."
+#~ msgstr "请输入十进制或十六进制标记，例如 2 或 0x2。"
 
-msgid "LAN Host List"
-msgstr "内网主机列表"
+#~ msgid ""
+#~ "Bind the direct outbound to this network interface so direct shunt "
+#~ "traffic egresses here. Empty = system default route."
+#~ msgstr ""
+#~ "将直连出站绑定到该网络接口，使分流直连流量从此接口发出。留空则使用系统默认"
+#~ "路由。"
 
-msgid "LAN Force Proxy Host List"
-msgstr "全局代理的LAN IP"
+#~ msgid "Only NaiveProxy (https) is supported in this build."
+#~ msgstr "本版本仅支持 NaiveProxy（https）。"
 
-msgid "Game Mode Host List"
-msgstr "增强游戏模式客户端LAN IP"
-
-msgid "Domain List"
-msgstr "域名列表"
-
-msgid "Direct Domain List"
-msgstr "不走代理的域名"
-
-msgid "Proxy Domain List"
-msgstr "强制走代理的域名"
-
-msgid "These had been joined websites will not proxy."
-msgstr "加入的域名将不走代理。"
-
-msgid "These had been joined websites will use proxy."
-msgstr "加入的域名将走代理。"
-
-msgid "Not valid domain name, please re-enter!"
-msgstr "不是有效域名，请重新输入！"
-
-msgid "Netflix Domain List"
-msgstr "Netflix分流域名"
-
-msgid "Oversea Domain List"
-msgstr "回国模式域名"
-
-msgid "Preload domain(GFW Only)"
-msgstr "预加载域名(仅GFW模式)"
-
-msgid "Advanced Settings"
-msgstr "高级设置"
-
-msgid "Server failsafe auto swith settings"
-msgstr "服务器节点故障故障转移设置"
-
-msgid "Enable Process Deamon"
-msgstr "启用进程自动守护"
-
-msgid "Switch check cycly(second)"
-msgstr "故障转移检查周期（秒）"
-
-msgid "Check timout(second)"
-msgstr "切换检查超时时间（秒）"
-
-msgid "Check Try Count"
-msgstr "切换检查重试次数"
-
-msgid "Global SOCKS5 Proxy Server"
-msgstr "SOCKS5 代理服务端（全局）"
-
-msgid "Server"
-msgstr "服务器"
-
-msgid "SSR Server"
-msgstr "服务端"
-
-msgid "Global Setting"
-msgstr "全局设置"
-
-msgid "Enable Server"
-msgstr "启动服务端"
-
-msgid "Server Setting"
-msgstr "服务端配置"
-
-msgid "Server Type"
-msgstr "服务端类型"
-
-msgid "Encrypt Method (SS)"
-msgstr "加密方式 (SS)"
-
-msgid "Plugin (SS)"
-msgstr "插件 (SS)"
-
-msgid "Warning! Please do not reuse the port!"
-msgstr "警告！请不要重复使用端口！"
-
-msgid "Enable Once Auth Mode"
-msgstr "启用一次性认证"
-
-msgid "Enable Once Auth,the client IP that passed the authentication will be added to the whitelist address, this IP no longer needs to be verified"
-msgstr "启用一次性认证后会将通过认证的客户端IP地址加入白名单，之后的连接不再进行认证"
-
-msgid "Connection Timeout"
-msgstr "连接超时"
-
-msgid "Unknown"
-msgstr "未知"
-
-msgid "Not exist"
-msgstr "未安装可执行文件"
-
-msgid "Status"
-msgstr "状态"
-
-msgid "Global Client"
-msgstr "TCP透明代理"
-
-msgid "Running"
-msgstr "运行中"
-
-msgid "Not Running"
-msgstr "未运行"
-
-msgid "Game Mode UDP Relay"
-msgstr "游戏模式UDP中继"
-
-msgid "Local Servers"
-msgstr "本机服务端"
-
-msgid "KcpTun Version"
-msgstr "KcpTun 版本号"
-
-msgid "Google Connectivity"
-msgstr "【谷歌】连通性检查"
-
-msgid "No Check"
-msgstr "未检查"
-
-msgid "Check..."
-msgstr "正在检查.."
-
-msgid "Connect OK"
-msgstr "连接正常"
-
-msgid "Connect Error"
-msgstr "连接错误"
-
-msgid "Check Connect"
-msgstr "检查连通性"
-
-msgid "Baidu Connectivity"
-msgstr "【百度】连通性检查"
-
-msgid "GFW List Data"
-msgstr "【GFW列表】数据库"
-
-msgid "Refresh Data"
-msgstr "更新数据库"
-
-msgid "Records"
-msgstr "条记录"
-
-msgid "Refresh..."
-msgstr "正在更新，请稍候.."
-
-msgid "Refresh OK!"
-msgstr "更新成功！"
-
-msgid "Refresh Error!"
-msgstr "更新失败！"
-
-msgid "No new data!"
-msgstr "你已经是最新数据，无需更新！"
-
-msgid "Total Records:"
-msgstr "新的总纪录数："
-
-msgid "China IPv4 Data"
-msgstr "【国内IPv4段】数据库"
-
-msgid "China IPv6 Data"
-msgstr "【国内IPv6段】数据库"
-
-msgid "Check Server Port"
-msgstr "【服务器端口】检查"
-
-msgid "Check Server"
-msgstr "检查服务器"
-
-msgid "Log"
-msgstr "日志"
-
-msgid "Finger Print"
-msgstr "指纹伪造"
-
-msgid "Shadowsocks2"
-msgstr "二次加密"
-
-msgid "From Share URL"
-msgstr "导入配置信息"
-
-msgid "Build Share URL"
-msgstr "导出配置信息"
-
-msgid "Import Finished"
-msgstr "导入完成："
-
-msgid "Not a supported scheme:"
-msgstr "不支持此格式："
-
-msgid "Invalid Share URL Format"
-msgstr "无效的配置链接"
-
-msgid "User cancelled"
-msgstr "用户已取消"
-
-msgid "Paste Share URL Here"
-msgstr "在此处粘贴配置链接"
-
-msgid "Unable share to clipboard"
-msgstr "复制配置链接到剪贴板失败"
-
-msgid "Share to clipboard successfully"
-msgstr "成功复制配置链接到剪贴板"
-
-msgid "Faltal on get option:"
-msgstr "获取选项错误："
-
-msgid "Faltal on set option:"
-msgstr "获取选项错误："
-
-msgid "Check update"
-msgstr "检查更新"
-
-msgid "Update..."
-msgstr "更新中"
-
-msgid "It is the latest version"
-msgstr "已是最新版本"
-
-msgid "Update successful"
-msgstr "更新成功"
-
-msgid "Click to update"
-msgstr "点击更新"
-
-msgid "Updating..."
-msgstr "更新中"
-
-msgid "Unexpected error"
-msgstr "意外错误"
-
-msgid "Updating, are you sure to close?"
-msgstr "正在更新，你确认要关闭吗？"
-
-msgid "Downloading..."
-msgstr "下载中"
-
-msgid "Unpacking..."
-msgstr "解压中"
-
-msgid "Moving..."
-msgstr "移动中"
-
-msgid "App Update"
-msgstr "组件更新"
-
-msgid "Please confirm that your firmware supports FPU."
-msgstr "请确认你的固件支持FPU。"
-
-msgid "Make sure there is enough space to install %s"
-msgstr "确保有足够的空间安装 %s"
-
-msgid "RUNNING"
-msgstr "运行中"
-
-msgid "NOT RUNNING"
-msgstr "未运行"
-
-msgid "Working..."
-msgstr "连接正常"
-
-msgid "Problem detected!"
-msgstr "连接失败"
-
-msgid "Very Fast"
-msgstr "非常快"
-
-msgid "Fast"
-msgstr "很快"
-
-msgid "General"
-msgstr "一般般"
-
-msgid "Slow"
-msgstr "很慢"
-
-msgid "Very Slow"
-msgstr "非常慢"
-
-msgid "Touch Check"
-msgstr "点我检测"
-
-msgid "Socks5 Server"
-msgstr "Socks5服务端"
-
-msgid "Running Status"
-msgstr "运行状态"
-
-msgid "Baidu Connection"
-msgstr "百度连接"
-
-msgid "Google Connection"
-msgstr "谷歌连接"
-
-msgid "Node Check"
-msgstr "节点检测"
-
-msgid "Check..."
-msgstr "检测中..."
-
-msgid "Clear"
-msgstr "清除"
-
-msgid "To Top"
-msgstr "置顶"
-
-msgid "Used with AdGuardHome"
-msgstr "与AdGuardHome搭配使用"
-
-msgid "Luci-app-adguardhome require"
-msgstr "请确保luci-app-adguardhome能正常启用,本插件会联动开启并配置ADG,ADG无需任何设置"
-
-
+#~ msgid ""
+#~ "Steer the naive -> server connection out of this interface. Empty = use "
+#~ "the global default egress interface."
+#~ msgstr "将 naive → 服务器的连接从该接口发出。留空则使用全局默认出口接口。"
