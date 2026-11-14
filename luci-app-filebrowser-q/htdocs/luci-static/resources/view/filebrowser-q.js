@@ -80,15 +80,6 @@ return view.extend({
 		o.default = '/';
 		o.rmempty = false;
 
-		o = s.option(form.Value, 'adminUsername', _('Admin username'));
-		o.default = 'admin';
-		o.rmempty = false;
-
-		o = s.option(form.Value, 'adminPassword', _('Admin password'));
-		o.password = true;
-		o.default = 'admin123';
-		o.rmempty = false;
-
 		o = s.option(form.Value, 'cacheDir', _('Cache directory'));
 		o.default = '/tmp';
 		o.rmempty = false;
